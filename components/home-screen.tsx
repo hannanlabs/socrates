@@ -48,13 +48,6 @@ export function HomeScreen() {
   return (
     <div className="flex flex-col h-full items-center justify-end px-4 pb-16 pt-8">
       <div className="max-w-2xl w-full flex flex-col items-center gap-8">
-        <div className="flex flex-col items-center mb-4">
-          <Avatar className="w-24 h-24 border-2 border-[#CC0033]">
-            <AvatarImage src="/ai-assistant-avatar.png" alt="AI Assistant" />
-            <AvatarFallback className="bg-[#333333] text-white text-xl">AI</AvatarFallback>
-          </Avatar>
-          <h2 className="text-xl font-medium text-gray-200 mt-4">Claude AI</h2>
-        </div>
 
         <div className="w-full relative">
           <textarea
