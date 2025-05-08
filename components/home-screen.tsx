@@ -19,8 +19,8 @@ export function HomeScreen() {
     setIsSubmitting(true)
     try {
       // Create a new chat with the initial message
-      const chatId = await createNewChat(user.id, message)
-
+      const chatId = await createNewChat(message)
+      
       if (chatId) {
         // For demo purposes, simulate an AI response
         setTimeout(async () => {
