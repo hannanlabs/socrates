@@ -35,12 +35,21 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
   return data
 }
 
-export async function createNewChat(userId: string, initialMessage: string): Promise<string | null> {
+export async function createNewChat(initialMessage: string): Promise<string | null> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    console.error("Error fetching authenticated user for chat creation:", authError)
+    return null
+  }
+
+  const authenticatedUserId = user.id
+
   // Create a new chat
   const { data: chatData, error: chatError } = await supabase
     .from("chats")
     .insert({
-      user_id: userId,
+      user_id: authenticatedUserId,
       title: initialMessage.slice(0, 50) + (initialMessage.length > 50 ? "..." : ""),
     })
     .select()
