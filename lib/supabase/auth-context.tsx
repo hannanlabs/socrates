@@ -37,24 +37,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
 
-      // Ensure user record exists in the database
-      if (session?.user) {
-        await ensureUserExists(session.user)
-      }
-
       setIsLoading(false)
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("onAuthStateChange event:", _event);
+      console.log("onAuthStateChange session:", session);
+      if (session?.user) {
+        console.log("onAuthStateChange user_metadata:", session.user.user_metadata);
+      }
+
       setSession(session)
       setUser(session?.user ?? null)
-
-      // Ensure user record exists in the database
-      if (session?.user) {
-        await ensureUserExists(session.user)
-      }
 
       setIsLoading(false)
     })
@@ -66,32 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Helper function to ensure user exists in the database
-  const ensureUserExists = async (authUser: User) => {
-    // Check if user exists in the users table
-    const { data, error } = await supabase.from("users").select("id").eq("id", authUser.id).single()
-
-    // If user doesn't exist, create them
-    if (error && error.code === "PGRST116") {
-      await supabase.from("users").insert({
-        id: authUser.id,
-        email: authUser.email || "unknown@example.com",
-        name: authUser.user_metadata?.name || null,
-        last_login: new Date().toISOString(),
-      })
-    } else if (!error) {
-      // Update last_login for existing users
-      await supabase.from("users").update({ last_login: new Date().toISOString() }).eq("id", authUser.id)
-    }
-  }
-
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    console.log("Attempting signUp with:", { email, name });
+    const { data: signUpResponse, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -101,7 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
 
-    if (error) throw error
+    if (error) {
+      console.error("Supabase signUp error:", error);
+      throw error
+    }
+    console.log("Supabase signUp successful:", signUpResponse);
+
+    if (signUpResponse?.user) {
+        console.log("User object from signUp response:", signUpResponse.user);
+        console.log("user_metadata from signUp response:", signUpResponse.user.user_metadata);
+    }
   }
 
   const signOut = async () => {
