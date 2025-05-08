@@ -95,25 +95,6 @@ export function Settings() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-gray-200 font-medium">Theme</h3>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className={`${theme === "dark" ? "bg-[#CC0033] text-white" : "bg-[#333333] text-gray-300"}`}
-                        onClick={() => handleThemeChange("dark")}
-                      >
-                        Dark
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className={`${theme === "light" ? "bg-[#CC0033] text-white" : "bg-[#333333] text-gray-300"}`}
-                        onClick={() => handleThemeChange("light")}
-                      >
-                        Light
-                      </Button>
-                    </div>
-                  </div>
 
                   <div className="flex items-center justify-between py-3">
                     <div>
