@@ -1,30 +1,8 @@
-# Claude home screen
+My high level idea with this is the following :
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+i want to create a chatgpt like interface where a user can open a chat and talk to a 3d avatar with voice. The use case I am targetting is in pretty much everything where you need to have a socratic discussion. For example, let's say you're iterating on a startup idea, the ability to debate on the idea would help massively. Or another use case, let's say you're a student who wants to debate the course material with discourse, you would have that ability. I want to design the UI in such a way that we're able to open the 3d avatar and start that discourse, and not have a filter. Just talk about anything and the AI will engage in conversation.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/syed-hannan-shahs-projects/v0-claude-home-screen)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/jVaShU08vK0)
+What do you think of this idea, I am thinking of adding some sort of tolerance parameter, where we can lower the filter and have it give you the raw truth, I'd like to know the technologies involved at a high level.
 
-## Overview
+Thet tech stack i'd like to use is next.js + typescript + trpc (backend) + fastapi (other backend)
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/syed-hannan-shahs-projects/v0-claude-home-screen](https://vercel.com/syed-hannan-shahs-projects/v0-claude-home-screen)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.dev/chat/projects/jVaShU08vK0](https://v0.dev/chat/projects/jVaShU08vK0)**
-
-## How It Works
-
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
