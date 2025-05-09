@@ -7,7 +7,7 @@ import { AuthProvider } from "@/lib/supabase/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Converse",
+  title: "Socratic",
 }
 
 export default function RootLayout({
