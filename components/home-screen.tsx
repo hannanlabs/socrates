@@ -7,6 +7,7 @@ import { Send } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/lib/supabase/auth-context"
 import { createNewChat, addMessageToChat } from "@/lib/supabase/chat-service"
+import InteractiveAvatar from "./InteractiveAvatar"
 
 export function HomeScreen() {
   const [message, setMessage] = useState("")
@@ -48,7 +49,7 @@ export function HomeScreen() {
   return (
     <div className="flex flex-col h-full items-center justify-end px-4 pb-16 pt-8">
       <div className="max-w-2xl w-full flex flex-col items-center gap-8">
-
+        <InteractiveAvatar />
         <div className="w-full relative">
           <textarea
             className="w-full h-24 bg-[#222222] rounded-xl border border-gray-700 p-4 text-gray-200 resize-none focus:outline-none focus:ring-1 focus:ring-gray-600"
