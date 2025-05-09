@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useConversation } from '@11labs/react';
-import { Mic, Square, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle } from 'lucide-react';
 
 interface ElevenLabsAgentProps {
   agentId: string;
+  onSpeakingStatusChange?: (isSpeaking: boolean) => void;
 }
 
 // Define the message types based on the ElevenLabs documentation
@@ -17,8 +18,9 @@ type MessageType = {
   type?: string;
 };
 
-const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
+const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId, onSpeakingStatusChange }) => {
   const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -38,7 +40,8 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
       setStatusMessage('Disconnected');
       
       // Only attempt reconnection if we had previously established a connection
-      if (sessionRef.current && retryCount < 3) {
+      // and we're not in a paused state
+      if (sessionRef.current && retryCount < 3 && !isPaused) {
         console.log(`Attempting to reconnect (attempt ${retryCount + 1}/3)...`);
         setRetryCount(prevCount => prevCount + 1);
         setTimeout(() => {
@@ -71,9 +74,16 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
   // Extract status and isSpeaking from the conversation object
   const { status, isSpeaking } = conversation;
 
+  // Report speaking status change
+  useEffect(() => {
+    if (onSpeakingStatusChange) {
+      onSpeakingStatusChange(isSpeaking);
+    }
+  }, [isSpeaking, onSpeakingStatusChange]);
+
   // Function to start the conversation
   const startConversation = async () => {
-    if (isConnecting) return;
+    if (isConnecting || isPaused) return;
     
     setIsConnecting(true);
     connectionAttemptRef.current += 1;
@@ -106,9 +116,11 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
     }
   };
 
-  // Start the conversation when the component mounts
+  // Start the conversation when the component mounts (if not paused)
   useEffect(() => {
-    startConversation();
+    if (!isPaused) {
+      startConversation();
+    }
     
     // Cleanup function to end the session when component unmounts
     return () => {
@@ -118,7 +130,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
       sessionRef.current = null;
       conversation.endSession();
     };
-  }, [agentId]);
+  }, [agentId, isPaused]);
 
   // Toggle mute/unmute
   const toggleMute = async () => {
@@ -130,9 +142,23 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
     }
   };
 
+  // Toggle pause/resume conversation
+  const togglePause = () => {
+    if (isPaused) {
+      // Resume the conversation
+      setIsPaused(false);
+      // startConversation will be called by the useEffect
+    } else {
+      // Pause the conversation - end the session to stop consuming API credits
+      setIsPaused(true);
+      setStatusMessage('Paused - API usage stopped');
+      conversation.endSession();
+    }
+  };
+
   // Handle manual reconnection
   const handleReconnect = () => {
-    if (status === 'disconnected' && !isConnecting) {
+    if (status === 'disconnected' && !isConnecting && !isPaused) {
       setRetryCount(0);
       startConversation();
     }
@@ -143,17 +169,27 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
       <div className="relative w-full">
         {/* Status indicator */}
         <div className="absolute bottom-2 left-2 flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded">
-          <div className={`h-2 w-2 rounded-full ${status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <div className={`h-2 w-2 rounded-full ${status === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
           <span>
-            {isConnecting ? 'Connecting...' : 
+            {isPaused ? 'Paused' : 
+             isConnecting ? 'Connecting...' : 
              isSpeaking ? 'AI Speaking' : status}
           </span>
         </div>
         
         {/* Controls */}
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
+          {/* Pause/Resume button */}
+          <button 
+            className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600' : 'bg-red-600'} flex items-center justify-center`}
+            onClick={togglePause}
+            title={isPaused ? 'Resume (start API usage)' : 'Pause (stop API usage)'}
+          >
+            {isPaused ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+          </button>
+
           {/* Reconnect button */}
-          {status === 'disconnected' && !isConnecting && (
+          {status === 'disconnected' && !isConnecting && !isPaused && (
             <button 
               className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center"
               onClick={handleReconnect}
@@ -167,7 +203,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId }) => {
           <button 
             className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center"
             onClick={toggleMute}
-            disabled={status !== 'connected'}
+            disabled={status !== 'connected' || isPaused}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
