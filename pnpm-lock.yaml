@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@11labs/react':
+        specifier: ^0.1.4
+        version: 0.1.4(react@19.0.0)
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.9.1(react-hook-form@7.54.1(react@19.0.0))
@@ -177,6 +180,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.0.0
+      '@types/three':
+        specifier: ^0.176.0
+        version: 0.176.0
       postcss:
         specifier: ^8
         version: 8.0.0
@@ -188,6 +194,14 @@ importers:
         version: 5.0.2
 
 packages:
+
+  '@11labs/client@0.1.4':
+    resolution: {integrity: sha512-XxNl4GpNW9NYOD1P5apzZBpcNOP0Zu4goZu8Lud1iTIVkjv3fDp+hyurZoSTUdsik/TIeuxMgbd392M/EQgoKw==}
+
+  '@11labs/react@0.1.4':
+    resolution: {integrity: sha512-iJ+cRfoj6WNQ9U48Umvhf4yw+LhmLYtkPXiU85Nj74paPQbSNBDTq6kwi7BTu2DtfgqP65T5BEjWhheV2IxogA==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -2245,6 +2259,13 @@ packages:
         optional: true
 
 snapshots:
+
+  '@11labs/client@0.1.4': {}
+
+  '@11labs/react@0.1.4(react@19.0.0)':
+    dependencies:
+      '@11labs/client': 0.1.4
+      react: 19.0.0
 
   '@alloc/quick-lru@5.2.0': {}
 
