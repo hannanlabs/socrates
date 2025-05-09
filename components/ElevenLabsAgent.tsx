@@ -1,197 +1,240 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useConversation } from '@11labs/react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useConversation, Role } from '@11labs/react';
 import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle } from 'lucide-react';
+
+export interface TranscriptEntry {
+  speaker: 'user' | 'assistant';
+  text: string;
+  timestamp: Date;
+}
 
 interface ElevenLabsAgentProps {
   agentId: string;
   onSpeakingStatusChange?: (isSpeaking: boolean) => void;
+  onConversationEnd?: (transcript: TranscriptEntry[]) => void;
 }
 
-// Define the message types based on the ElevenLabs documentation
-type MessageType = {
-  message: string;
-  source: 'user' | 'assistant';
-  // Additional fields for different message types
-  is_final?: boolean;
-  type?: string;
-};
+interface SDKMessage {
+    message: string;
+    source: Role;
+    type?: string;
+    is_final?: boolean;
+    text?: string;
+}
 
-const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId, onSpeakingStatusChange }) => {
+const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ 
+  agentId, 
+  onSpeakingStatusChange, 
+  onConversationEnd 
+}) => {
   const [isMuted, setIsMuted] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(true); 
+  const [statusMessage, setStatusMessage] = useState<string | null>('Paused - Click Play to Start');
   const [isConnecting, setIsConnecting] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const connectionAttemptRef = useRef<number>(0);
   const sessionRef = useRef<string | null>(null);
+  const [currentTranscript, setCurrentTranscript] = useState<TranscriptEntry[]>([]);
   
-  // Initialize the conversation hook
-  const conversation = useConversation({
+  const onConversationEndRef = useRef(onConversationEnd);
+  const currentTranscriptRef = useRef(currentTranscript);
+
+  useEffect(() => {
+    onConversationEndRef.current = onConversationEnd;
+  }, [onConversationEnd]);
+
+  useEffect(() => {
+    currentTranscriptRef.current = currentTranscript;
+  }, [currentTranscript]);
+  
+  const elevenLabsConversation = useConversation({
     onConnect: () => {
-      console.log('Connected to ElevenLabs Conversational AI');
-      setStatusMessage('Connected');
+      console.log('(ElevenLabs SDK) Connected');
+      setStatusMessage('Connected & Listening...');
       setIsConnecting(false);
       setRetryCount(0);
     },
     onDisconnect: () => {
-      console.log('Disconnected from ElevenLabs Conversational AI');
-      setStatusMessage('Disconnected');
+      console.log('(ElevenLabs SDK) Disconnected');
+      const wasSessionActive = !!sessionRef.current;
+      sessionRef.current = null;
+
+      if (!isPaused) setStatusMessage('Disconnected');
       
-      // Only attempt reconnection if we had previously established a connection
-      // and we're not in a paused state
-      if (sessionRef.current && retryCount < 3 && !isPaused) {
+      if (wasSessionActive && retryCount < 3 && !isPaused && !isConnecting) {
         console.log(`Attempting to reconnect (attempt ${retryCount + 1}/3)...`);
         setRetryCount(prevCount => prevCount + 1);
         setTimeout(() => {
-          startConversation();
-        }, 2000); // Wait 2 seconds before reconnecting
+          if (!isPaused && !isConnecting && elevenLabsConversation.status !== 'connected') {
+            startConversation();
+          }
+        }, 2000);
+      } else if (wasSessionActive && !isPaused && !isConnecting) {
+        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
+            console.log('Disconnected and not reconnecting, calling onConversationEnd.');
+            onConversationEndRef.current(currentTranscriptRef.current);
+        }
+        setCurrentTranscript([]);
       }
     },
     onError: (error: any) => {
-      console.error('Conversation error:', error);
+      console.error('(ElevenLabs SDK) Error:', error);
       setStatusMessage(`Error: ${error.message || 'Unknown error'}`);
       setIsConnecting(false);
+      const wasSessionActive = !!sessionRef.current;
+      sessionRef.current = null;
+      if (wasSessionActive && onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
+        console.log('onError, calling onConversationEnd.');
+        onConversationEndRef.current(currentTranscriptRef.current);
+      }
+      setCurrentTranscript([]);
     },
-    onMessage: (message: any) => {
-      // Using any type temporarily until we know the exact message format
-      console.log('New message:', message);
-      
-      // Handle different message types based on their structure
-      if (message.type === 'transcript' && message.is_final) {
-        setStatusMessage(`You said: ${message.text || message.message}`);
-      } else if (message.type === 'response') {
-        setStatusMessage(`AI responding...`);
-      } else if (message.source === 'user') {
-        setStatusMessage(`You said: ${message.message}`);
-      } else if (message.source === 'assistant') {
-        setStatusMessage(`AI: ${message.message}`);
+    onMessage: (message: SDKMessage) => {
+      console.log('New message from SDK:', message);
+      let entry: TranscriptEntry | null = null;
+
+      if (message.source === 'user' && message.type === 'transcript' && message.is_final && message.text) {
+        setStatusMessage(`You said: ${message.text}`);
+        entry = { speaker: 'user', text: message.text, timestamp: new Date() };
+      } 
+      else if (message.source !== 'user' && message.message) { 
+        const speakerRole: 'assistant' = 'assistant';
+        setStatusMessage(`${speakerRole === 'assistant' ? 'AI' : message.source}: ${message.message}`);
+        entry = { speaker: speakerRole, text: message.message, timestamp: new Date() };
+      } 
+      else if (message.source !== 'user' && message.type === 'response') { 
+        setStatusMessage('AI responding...');
+      }
+
+      if (entry) {
+        setCurrentTranscript(prev => [...prev, entry!]);
       }
     },
   });
 
-  // Extract status and isSpeaking from the conversation object
-  const { status, isSpeaking } = conversation;
+  const { status: sdkStatus, isSpeaking } = elevenLabsConversation;
 
-  // Report speaking status change
   useEffect(() => {
     if (onSpeakingStatusChange) {
       onSpeakingStatusChange(isSpeaking);
     }
   }, [isSpeaking, onSpeakingStatusChange]);
 
-  // Function to start the conversation
-  const startConversation = async () => {
-    if (isConnecting || isPaused) return;
+  const startConversation = useCallback(async () => {
+    if (isConnecting || isPaused || sdkStatus === 'connected' || sessionRef.current) return;
     
+    console.log('startConversation: Attempting to start...');
     setIsConnecting(true);
+    setCurrentTranscript([]);
     connectionAttemptRef.current += 1;
     const currentAttempt = connectionAttemptRef.current;
     
     try {
-      console.log(`Starting conversation, attempt #${currentAttempt}`);
-      
-      // Get microphone permissions first
+      console.log(`startConversation: Starting session, attempt #${currentAttempt}`);
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      const conversationId = await elevenLabsConversation.startSession({ agentId });
       
-      // Start the session with the agent ID
-      const conversationId = await conversation.startSession({ 
-        agentId: agentId 
-      });
-      
-      // Only update if this is still the latest attempt
       if (currentAttempt === connectionAttemptRef.current) {
-        console.log(`Started conversation with ID: ${conversationId}`);
-        sessionRef.current = conversationId;
-      }
-    } catch (error) {
-      console.error('Failed to start conversation:', error);
-      
-      // Only update if this is still the latest attempt
-      if (currentAttempt === connectionAttemptRef.current) {
-        setStatusMessage('Failed to start conversation. Please check microphone permissions.');
+        console.log(`startConversation: Session started with ID: ${conversationId}`);
+        sessionRef.current = conversationId; 
+        setStatusMessage('Connected & Listening...');
         setIsConnecting(false);
       }
+    } catch (error) {
+      console.error('startConversation: Failed to start:', error);
+      if (currentAttempt === connectionAttemptRef.current) {
+        setStatusMessage('Failed to start. Check mic permissions.');
+        setIsConnecting(false);
+        sessionRef.current = null; 
+      }
     }
-  };
+  }, [agentId, elevenLabsConversation, isConnecting, isPaused, sdkStatus]);
 
-  // Start the conversation when the component mounts (if not paused)
   useEffect(() => {
+    console.log(`Lifecycle Effect: isPaused=${isPaused}, agentId=${agentId}, sdkStatus=${sdkStatus}, isConnecting=${isConnecting}`);
     if (!isPaused) {
-      startConversation();
+      if (sdkStatus !== 'connected' && !isConnecting && !sessionRef.current) {
+        console.log('Lifecycle Effect: Unpaused, attempting to start conversation.');
+        startConversation();
+      }
+    } else {
+      if (sessionRef.current) { 
+        console.log('Lifecycle Effect: Paused state, ending session.');
+        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
+          onConversationEndRef.current(currentTranscriptRef.current);
+        }
+        elevenLabsConversation.endSession();
+        sessionRef.current = null; 
+        setCurrentTranscript([]); 
+      }
     }
-    
-    // Cleanup function to end the session when component unmounts
-    return () => {
-      console.log('Cleaning up conversation session');
-      setIsConnecting(false);
-      connectionAttemptRef.current = 0;
-      sessionRef.current = null;
-      conversation.endSession();
-    };
-  }, [agentId, isPaused]);
 
-  // Toggle mute/unmute
+    return () => {
+      console.log(`Cleanup (agentId: ${agentId}): Ending session if active.`);
+      if (sessionRef.current) {
+        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
+          onConversationEndRef.current(currentTranscriptRef.current);
+        }
+        elevenLabsConversation.endSession();
+        sessionRef.current = null;
+      }
+      connectionAttemptRef.current = 0;
+    };
+  }, [isPaused, agentId, startConversation, sdkStatus]);
+
   const toggleMute = async () => {
     try {
-      await conversation.setVolume({ volume: isMuted ? 1.0 : 0.0 });
+      await elevenLabsConversation.setVolume({ volume: isMuted ? 1.0 : 0.0 });
       setIsMuted(!isMuted);
     } catch (error) {
       console.error('Failed to change volume:', error);
     }
   };
 
-  // Toggle pause/resume conversation
   const togglePause = () => {
-    if (isPaused) {
-      // Resume the conversation
-      setIsPaused(false);
-      // startConversation will be called by the useEffect
+    const nextPausedState = !isPaused;
+    console.log(`togglePause: Setting isPaused to ${nextPausedState}`);
+    setIsPaused(nextPausedState);
+    if (nextPausedState) {
+        setStatusMessage('Paused - Click Play to Start');
     } else {
-      // Pause the conversation - end the session to stop consuming API credits
-      setIsPaused(true);
-      setStatusMessage('Paused - API usage stopped');
-      conversation.endSession();
+        setStatusMessage('Attempting to connect...');
     }
   };
 
-  // Handle manual reconnection
   const handleReconnect = () => {
-    if (status === 'disconnected' && !isConnecting && !isPaused) {
+    if (sdkStatus === 'disconnected' && !isConnecting && !isPaused) {
       setRetryCount(0);
       startConversation();
     }
   };
+  
+  const currentDisplayStatus = isPaused ? 'Paused' : 
+                               isConnecting ? 'Connecting...' : 
+                               isSpeaking ? 'AI Speaking' : statusMessage || sdkStatus;
 
   return (
     <div className="w-full flex flex-col items-center">
       <div className="relative w-full">
-        {/* Status indicator */}
         <div className="absolute bottom-2 left-2 flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded">
-          <div className={`h-2 w-2 rounded-full ${status === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span>
-            {isPaused ? 'Paused' : 
-             isConnecting ? 'Connecting...' : 
-             isSpeaking ? 'AI Speaking' : status}
-          </span>
+          <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <span>{currentDisplayStatus}</span>
         </div>
         
-        {/* Controls */}
         <div className="absolute bottom-2 right-2 flex items-center gap-2">
-          {/* Pause/Resume button */}
           <button 
-            className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600' : 'bg-red-600'} flex items-center justify-center`}
+            className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} flex items-center justify-center`}
             onClick={togglePause}
             title={isPaused ? 'Resume (start API usage)' : 'Pause (stop API usage)'}
           >
             {isPaused ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
           </button>
 
-          {/* Reconnect button */}
-          {status === 'disconnected' && !isConnecting && !isPaused && (
+          {sdkStatus === 'disconnected' && !isConnecting && !isPaused && (
             <button 
-              className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center"
+              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center"
               onClick={handleReconnect}
               title="Reconnect"
             >
@@ -199,11 +242,10 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId, onSpeakingSt
             </button>
           )}
           
-          {/* Mute button */}
           <button 
-            className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center"
+            className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
             onClick={toggleMute}
-            disabled={status !== 'connected' || isPaused}
+            disabled={(sdkStatus !== 'connected' && !isConnecting) || isPaused}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -211,14 +253,13 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ agentId, onSpeakingSt
         </div>
       </div>
       
-      {/* Status message */}
-      {statusMessage && (
+      {statusMessage && currentDisplayStatus !== statusMessage && (
         <div className="mt-2 text-sm text-gray-400">
           {statusMessage}
         </div>
       )}
     </div>
   );
-};
+}; 
 
-export default ElevenLabsAgent; 
+export default ElevenLabsAgent;
