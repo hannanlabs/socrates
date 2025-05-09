@@ -136,59 +136,54 @@ const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
 const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "XR5yYfHH1SN8fjv699UX" }) => {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const { user } = useAuth();
+  const chatIdRef = useRef<string | null>(null);
 
-  const handleConversationEnd = useCallback(async (transcript: TranscriptEntry[]) => {
-    if (!transcript || transcript.length === 0) {
-      console.log("No transcript to save.");
-      return;
-    }
+  // Handler for new messages coming from ElevenLabsAgent
+  const handleNewMessage = useCallback(async (message: TranscriptEntry) => {
     if (!user) {
-        console.error("User not authenticated. Cannot save transcript.");
-        // Optionally, notify the user or queue the transcript for later saving
-        return;
-    }
-
-    console.log("Conversation ended. Transcript:", transcript);
-
-    // Find the first user message to create the chat
-    const firstUserMessage = transcript.find(entry => entry.speaker === 'user');
-    if (!firstUserMessage) {
-      console.error("No user messages in transcript to create chat.");
+      console.error("User not authenticated. Cannot save message.");
       return;
     }
+
+    console.log("New message received:", message);
 
     try {
-      // 1. Create a new chat session with the first user message
-      // Assuming createNewChat takes the message text and returns a chatId.
-      // You might need to adjust this if createNewChat expects a user ID or other params.
-      console.log("Creating new chat with first message:", firstUserMessage.text);
-      const chatId = await createNewChat(firstUserMessage.text);
-
-      if (chatId) {
-        console.log("New chat created with ID:", chatId);
-        // 2. Add all messages (including the first one if your createNewChat doesn't add it)
-        //    to the chat session.
-        //    For simplicity, let's assume createNewChat adds the first message.
-        //    So we iterate from the second message onwards if the first one was user.
-        //    Or, a more robust way: iterate all and let addMessageToChat handle duplicates if any,
-        //    or ensure addMessageToChat is idempotent, or filter out the exact first message.
-
-        // Let's iterate all messages after the first one used to create chat.
-        const messagesToSave = transcript.slice(transcript.indexOf(firstUserMessage) + 1);
-
-        // Or if createNewChat does NOT save the first message, use this:
-        // const messagesToSave = transcript;
-
-        for (const entry of messagesToSave) {
-            console.log(`Adding message to chat ${chatId}:`, entry);
-            await addMessageToChat(chatId, entry.speaker, entry.text);
+      // If we don't have a chat ID yet and this is a user message, create a new chat
+      if (!chatIdRef.current && message.speaker === 'user') {
+        console.log("Creating new chat with message:", message.text);
+        const newChatId = await createNewChat(message.text);
+        
+        if (newChatId) {
+          console.log("New chat created with ID:", newChatId);
+          chatIdRef.current = newChatId;
+        } else {
+          console.error("Failed to create chat session in Supabase.");
+          return;
         }
-        console.log("All messages added to Supabase.");
-      } else {
-        console.error("Failed to create new chat session in Supabase.");
+      } 
+      // If this is an AI message or a subsequent user message, add it to the existing chat
+      else if (chatIdRef.current) {
+        console.log(`Adding message to chat ${chatIdRef.current}:`, message);
+        await addMessageToChat(chatIdRef.current, message.speaker, message.text);
       }
+      // If we have a first message from AI without a chat created yet, create a chat first
+      else if (message.speaker === 'assistant' && !chatIdRef.current) {
+        console.log("Creating new chat for AI response with placeholder user message");
+        const newChatId = await createNewChat("New conversation");
+        
+        if (newChatId) {
+          console.log("New chat created with ID:", newChatId);
+          chatIdRef.current = newChatId;
+          console.log(`Adding AI message to chat ${chatIdRef.current}:`, message);
+          await addMessageToChat(chatIdRef.current, message.speaker, message.text);
+        } else {
+          console.error("Failed to create chat session in Supabase.");
+          return;
+        }
+      }
+
     } catch (error) {
-      console.error("Error saving transcript to Supabase:", error);
+      console.error("Error saving message to Supabase:", error);
     }
   }, [user]);
 
@@ -212,7 +207,7 @@ const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "XR5yYf
         <ElevenLabsAgent 
           agentId={agentId} 
           onSpeakingStatusChange={setIsAgentSpeaking} 
-          onConversationEnd={handleConversationEnd}
+          onNewMessage={handleNewMessage}
         />
       </div>
     </div>

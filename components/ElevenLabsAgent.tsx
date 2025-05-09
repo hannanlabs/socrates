@@ -13,7 +13,7 @@ export interface TranscriptEntry {
 interface ElevenLabsAgentProps {
   agentId: string;
   onSpeakingStatusChange?: (isSpeaking: boolean) => void;
-  onConversationEnd?: (transcript: TranscriptEntry[]) => void;
+  onNewMessage?: (message: TranscriptEntry) => void;
 }
 
 interface SDKMessage {
@@ -27,7 +27,7 @@ interface SDKMessage {
 const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ 
   agentId, 
   onSpeakingStatusChange, 
-  onConversationEnd 
+  onNewMessage 
 }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true); 
@@ -36,18 +36,13 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const connectionAttemptRef = useRef<number>(0);
   const sessionRef = useRef<string | null>(null);
-  const [currentTranscript, setCurrentTranscript] = useState<TranscriptEntry[]>([]);
   
-  const onConversationEndRef = useRef(onConversationEnd);
-  const currentTranscriptRef = useRef(currentTranscript);
-
+  const onNewMessageRef = useRef(onNewMessage);
+  
+  // Update refs when props change
   useEffect(() => {
-    onConversationEndRef.current = onConversationEnd;
-  }, [onConversationEnd]);
-
-  useEffect(() => {
-    currentTranscriptRef.current = currentTranscript;
-  }, [currentTranscript]);
+    onNewMessageRef.current = onNewMessage;
+  }, [onNewMessage]);
   
   const elevenLabsConversation = useConversation({
     onConnect: () => {
@@ -58,12 +53,10 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     },
     onDisconnect: () => {
       console.log('(ElevenLabs SDK) Disconnected');
-      const wasSessionActive = !!sessionRef.current;
       sessionRef.current = null;
-
       if (!isPaused) setStatusMessage('Disconnected');
       
-      if (wasSessionActive && retryCount < 3 && !isPaused && !isConnecting) {
+      if (retryCount < 3 && !isPaused && !isConnecting) {
         console.log(`Attempting to reconnect (attempt ${retryCount + 1}/3)...`);
         setRetryCount(prevCount => prevCount + 1);
         setTimeout(() => {
@@ -71,45 +64,50 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
             startConversation();
           }
         }, 2000);
-      } else if (wasSessionActive && !isPaused && !isConnecting) {
-        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
-            console.log('Disconnected and not reconnecting, calling onConversationEnd.');
-            onConversationEndRef.current(currentTranscriptRef.current);
-        }
-        setCurrentTranscript([]);
       }
     },
     onError: (error: any) => {
       console.error('(ElevenLabs SDK) Error:', error);
       setStatusMessage(`Error: ${error.message || 'Unknown error'}`);
       setIsConnecting(false);
-      const wasSessionActive = !!sessionRef.current;
       sessionRef.current = null;
-      if (wasSessionActive && onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
-        console.log('onError, calling onConversationEnd.');
-        onConversationEndRef.current(currentTranscriptRef.current);
-      }
-      setCurrentTranscript([]);
     },
     onMessage: (message: SDKMessage) => {
       console.log('New message from SDK:', message);
-      let entry: TranscriptEntry | null = null;
-
+      
+      // Handle user transcript
       if (message.source === 'user' && message.type === 'transcript' && message.is_final && message.text) {
         setStatusMessage(`You said: ${message.text}`);
-        entry = { speaker: 'user', text: message.text, timestamp: new Date() };
+        
+        const entry: TranscriptEntry = { 
+          speaker: 'user', 
+          text: message.text, 
+          timestamp: new Date() 
+        };
+        
+        // Send message to parent component for saving
+        if (onNewMessageRef.current) {
+          onNewMessageRef.current(entry);
+        }
       } 
+      // Handle AI response
       else if (message.source !== 'user' && message.message) { 
         const speakerRole: 'assistant' = 'assistant';
         setStatusMessage(`${speakerRole === 'assistant' ? 'AI' : message.source}: ${message.message}`);
-        entry = { speaker: speakerRole, text: message.message, timestamp: new Date() };
+        
+        const entry: TranscriptEntry = { 
+          speaker: speakerRole, 
+          text: message.message, 
+          timestamp: new Date() 
+        };
+        
+        // Send message to parent component for saving
+        if (onNewMessageRef.current) {
+          onNewMessageRef.current(entry);
+        }
       } 
       else if (message.source !== 'user' && message.type === 'response') { 
         setStatusMessage('AI responding...');
-      }
-
-      if (entry) {
-        setCurrentTranscript(prev => [...prev, entry!]);
       }
     },
   });
@@ -127,7 +125,6 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     
     console.log('startConversation: Attempting to start...');
     setIsConnecting(true);
-    setCurrentTranscript([]);
     connectionAttemptRef.current += 1;
     const currentAttempt = connectionAttemptRef.current;
     
@@ -152,8 +149,10 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     }
   }, [agentId, elevenLabsConversation, isConnecting, isPaused, sdkStatus]);
 
+  // Main effect to handle pause/unpause
   useEffect(() => {
     console.log(`Lifecycle Effect: isPaused=${isPaused}, agentId=${agentId}, sdkStatus=${sdkStatus}, isConnecting=${isConnecting}`);
+    
     if (!isPaused) {
       if (sdkStatus !== 'connected' && !isConnecting && !sessionRef.current) {
         console.log('Lifecycle Effect: Unpaused, attempting to start conversation.');
@@ -162,27 +161,20 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     } else {
       if (sessionRef.current) { 
         console.log('Lifecycle Effect: Paused state, ending session.');
-        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
-          onConversationEndRef.current(currentTranscriptRef.current);
-        }
         elevenLabsConversation.endSession();
         sessionRef.current = null; 
-        setCurrentTranscript([]); 
       }
     }
 
     return () => {
       console.log(`Cleanup (agentId: ${agentId}): Ending session if active.`);
       if (sessionRef.current) {
-        if (onConversationEndRef.current && currentTranscriptRef.current.length > 0 && currentTranscriptRef.current.some(e => e.speaker === 'user')) {
-          onConversationEndRef.current(currentTranscriptRef.current);
-        }
         elevenLabsConversation.endSession();
         sessionRef.current = null;
       }
       connectionAttemptRef.current = 0;
     };
-  }, [isPaused, agentId, startConversation, sdkStatus]);
+  }, [isPaused, agentId, startConversation, sdkStatus, isConnecting, elevenLabsConversation]);
 
   const toggleMute = async () => {
     try {
