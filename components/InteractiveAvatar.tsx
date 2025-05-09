@@ -61,7 +61,7 @@ interface InteractiveAvatarProps {
   agentId?: string;
 }
 
-const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "6fYFhKmGQZ8sdUf06ff1" }) => {
+const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "i1skI47tYw4iyRzDcQBF" }) => {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
 
   return (
