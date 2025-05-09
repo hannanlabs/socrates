@@ -7,6 +7,7 @@ import { Search, Trash2 } from "lucide-react"
 import { useAuth } from "@/lib/supabase/auth-context"
 import { getUserChats, archiveChat } from "@/lib/supabase/chat-service"
 import type { Database } from "@/lib/supabase/database.types"
+import { useRouter } from "next/navigation"
 
 type Chat = Database["public"]["Tables"]["chats"]["Row"]
 
@@ -15,6 +16,7 @@ export function ChatHistory() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const { user } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -45,6 +47,10 @@ export function ChatHistory() {
     } catch (error) {
       console.error("Error archiving chat:", error)
     }
+  }
+
+  const handleChatClick = (chatId: string) => {
+    router.push(`/chat/${chatId}`)
   }
 
   const filteredChats = searchQuery
@@ -92,7 +98,7 @@ export function ChatHistory() {
             ? "Loading chats..."
             : filteredChats.length === 0
               ? "No chats found"
-              : `${filteredChats.length} ${filteredChats.length === 1 ? "chat" : "chats"}`}
+              : `${filteredChats.length} ${filteredChats.length === 1 ? "chat" : "chats"} - Click on a chat to view messages`}
         </p>
       </div>
 
@@ -106,6 +112,7 @@ export function ChatHistory() {
             <div
               key={chat.id}
               className="bg-[#222222] border border-gray-700 rounded-lg p-4 hover:bg-[#2A2A2A] cursor-pointer flex justify-between items-start"
+              onClick={() => handleChatClick(chat.id)}
             >
               <div>
                 <h3 className="text-gray-200 font-medium">{chat.title}</h3>
