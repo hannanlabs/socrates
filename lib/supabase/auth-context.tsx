@@ -14,6 +14,7 @@ type AuthContextType = {
   signUp: (email: string, password: string, name: string) => Promise<void>
   signOut: () => Promise<void>
   checkIfUserExists: (email: string) => Promise<boolean>
+  updateUserAgentId: (agentId: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -156,8 +157,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const updateUserAgentId = async (agentId: string) => {
+    if (!user) {
+      throw new Error("User must be logged in to update Agent ID.")
+    }
+    const { data, error } = await supabase.auth.updateUser({
+      data: { elevenlabs_agent_id: agentId },
+    })
+
+    if (error) {
+      console.error("AuthProvider updateUserAgentId error:", error)
+      throw error
+    }
+
+    if (data.user) {
+      // Update the local user state to reflect the change immediately
+      setUser(data.user)
+      console.log("AuthProvider Agent ID updated successfully. New user data:", data.user);
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, checkIfUserExists }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, checkIfUserExists, updateUserAgentId }}>
       {children}
     </AuthContext.Provider>
   )

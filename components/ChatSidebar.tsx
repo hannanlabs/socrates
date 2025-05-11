@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
+import { useRouter } from 'next/navigation';
 import { Search, Trash2, Edit2, Save, X, PlusCircle, MessageSquare, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { getUserChats, archiveChat, updateChatTitle, createNewChat, getChatById } from "@/lib/supabase/chat-service";
@@ -22,6 +23,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editedTitle, setEditedTitle] = useState("");
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -255,7 +257,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
         )}
       </div>
 
-      {/* Footer with New Chat Button & User Info/Logout */}
+      {/* Footer with New Chat Button & User Info/Logout/Settings */}
       <div className="p-3 border-t border-[#2A2A2A] mt-auto">
         <button 
           onClick={handleCreateNewChat}
@@ -264,19 +266,28 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
           <PlusCircle size={18} className="mr-2 text-[#E50041]" /> Start New Chat
         </button>
         <div className="flex items-center justify-between">
-            <div className="flex items-center">
-                <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-sm font-semibold text-white mr-2.5">
+            <div className="flex items-center min-w-0">
+                <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-sm font-semibold text-white mr-2.5 flex-shrink-0">
                     {getInitial()}
                 </div>
                 <span className="text-xs text-gray-300 truncate">{user?.email}</span>
             </div>
-            <button 
-                onClick={handleLogout}
-                title="Logout"
-                className="text-gray-400 hover:text-[#E50041] p-1 rounded"
-            >
-                <LogOut size={18}/>
-            </button>
+            <div className="flex items-center">
+              <button 
+                  onClick={() => router.push('/settings')}
+                  title="Settings"
+                  className="text-gray-400 hover:text-[#E50041] p-1 rounded mr-2"
+              >
+                  <Settings size={18}/>
+              </button>
+              <button 
+                  onClick={handleLogout}
+                  title="Logout"
+                  className="text-gray-400 hover:text-[#E50041] p-1 rounded"
+              >
+                  <LogOut size={18}/>
+              </button>
+            </div>
         </div>
       </div>
     </div>

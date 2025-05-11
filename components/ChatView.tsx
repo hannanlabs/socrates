@@ -114,7 +114,10 @@ export function ChatView({ chatId }: ChatViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
-  const agentInstanceId = `agent-for-chat-${chatId}`;
+  const agentInstanceIdBase = `agent-for-chat-${chatId}`;
+
+  const agentIdToUse = user?.user_metadata?.elevenlabs_agent_id;
+  const agentKey = `${agentInstanceIdBase}-${agentIdToUse}`;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -396,8 +399,8 @@ export function ChatView({ chatId }: ChatViewProps) {
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
         <ElevenLabsAgent 
-            key={agentInstanceId}
-            agentId="UvPz3Vgu9O6iI0KDWJDT"
+            key={agentKey}
+            agentId={agentIdToUse}
             onNewMessage={handleNewMessageFromAgent}
             onSpeakingStatusChange={setIsAgentSpeaking}
             onPauseStateChange={handlePauseStateChange}
