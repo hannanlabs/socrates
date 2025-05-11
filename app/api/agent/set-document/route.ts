@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
             id: newUploadedDocumentId,
             name: newUploadedDocumentName, 
             type: "file", 
-            usage_mode: "auto"
+            usage_mode: "prompt"
         });
     }
     
