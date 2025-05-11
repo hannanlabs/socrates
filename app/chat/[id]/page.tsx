@@ -267,14 +267,14 @@ export default function ChatPage() {
                   className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-[#444444]"
                 >
                   <File className="mr-2 h-4 w-4" />
-                  Word Document (.docx)
+                  Word (.docx)
                 </button>
                 <button 
                   onClick={exportToPdf}
                   className="flex items-center w-full px-4 py-2 text-left text-white hover:bg-[#444444]"
                 >
                   <FileIcon className="mr-2 h-4 w-4" />
-                  PDF Document (.pdf)
+                  PDF (.pdf)
                 </button>
               </div>
             </div>
