@@ -3,10 +3,11 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getChatMessages, getChatById, addMessageToChat } from "@/lib/supabase/chat-service";
 import { useAuth } from "@/lib/supabase/auth-context";
-import { Loader2, Download, FileText, File as FileIconType, ChevronDown, Send, AlertTriangle, Mic } from "lucide-react";
+import { Loader2, Download, FileText, File as FileIconType, ChevronDown, Send, AlertTriangle, Mic, Paperclip, X, CheckCircle } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { Packer, Paragraph, TextRun, Document, HeadingLevel } from "docx";
 import ElevenLabsAgent, { TranscriptEntry } from "@/components/ElevenLabsAgent";
+import { User } from "@supabase/supabase-js";
 
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -21,6 +22,11 @@ type Message = {
 
 interface ChatViewProps {
   chatId: string;
+  user: User;
+  initiateDocumentUpload: () => void;
+  onDocumentReadyToProcess: () => Promise<void>;
+  selectedFile: File | null;
+  clearSelectedFile: () => void;
 }
 
 const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
@@ -103,8 +109,17 @@ const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
   );
 };
 
-export function ChatView({ chatId }: ChatViewProps) {
-  const { user } = useAuth();
+export function ChatView({ 
+  chatId, 
+  user: propUser,
+  initiateDocumentUpload,
+  onDocumentReadyToProcess,
+  selectedFile,
+  clearSelectedFile 
+}: ChatViewProps) {
+  const { user: authUser } = useAuth();
+  const user = propUser || authUser;
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -398,13 +413,53 @@ export function ChatView({ chatId }: ChatViewProps) {
       </div>
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
-        <ElevenLabsAgent 
-            key={agentKey}
-            agentId={agentIdToUse}
-            onNewMessage={handleNewMessageFromAgent}
-            onSpeakingStatusChange={setIsAgentSpeaking}
-            onPauseStateChange={handlePauseStateChange}
-        />
+        {selectedFile && (
+          <div className="mb-2 p-3 bg-[#252525] rounded-md flex items-center justify-between text-sm">
+            <div className="flex items-center overflow-hidden">
+              <FileText size={18} className="text-gray-400 mr-2 flex-shrink-0" />
+              <span className="text-gray-200 truncate" title={selectedFile.name}>
+                {selectedFile.name}
+              </span>
+              <span className="text-gray-500 ml-2 flex-shrink-0">
+                ({(selectedFile.size / 1024).toFixed(1)} KB)
+              </span>
+            </div>
+            <div className="flex items-center flex-shrink-0">
+              <button
+                onClick={async () => {
+                  await onDocumentReadyToProcess();
+                }}
+                className="flex items-center bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition-colors mr-2"
+                title="Use this document for the conversation"
+              >
+                <CheckCircle size={14} className="mr-1" /> Use Document
+              </button>
+              <button
+                onClick={clearSelectedFile}
+                className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors"
+                title="Clear selected document"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <ElevenLabsAgent 
+              key={agentKey}
+              agentId={agentIdToUse}
+              onNewMessage={handleNewMessageFromAgent}
+              onSpeakingStatusChange={setIsAgentSpeaking}
+              onPauseStateChange={handlePauseStateChange}
+          />
+          <button
+            onClick={initiateDocumentUpload}
+            className="ml-3 p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors"
+            title="Upload a document"
+          >
+            <Paperclip size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );
