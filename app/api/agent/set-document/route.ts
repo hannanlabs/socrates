@@ -14,42 +14,14 @@ export async function POST(req: NextRequest) {
     console.error('ElevenLabs API key not configured.');
     return NextResponse.json({ error: 'Server configuration error: ElevenLabs API key missing.' }, { status: 500 });
   }
-  // Removed check for placeholder hardcoded ID as user has updated it.
 
   const agentId = HARDCODED_AGENT_ID;
   const elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
   
-  let oldDocumentIds: string[] = [];
   let newUploadedDocumentId: string | undefined = undefined;
-  let agentUpdatePayload: any = {}; 
+  let newUploadedDocumentName: string | undefined = undefined;
 
   try {
-    console.log(`Fetching details for agent ID: ${agentId}`);
-    const currentAgent: any = await elevenlabs.conversationalAi.getAgent(agentId); // Use any for now to bypass linter for logging
-    // console.log("Full currentAgent structure:", JSON.stringify(currentAgent, null, 2)); // UNCOMMENT THIS TO DEBUG AGENT STRUCTURE
-
-    agentUpdatePayload = {
-        name: currentAgent.name, 
-        // Assuming other fields like voice_id, model_id, llm_model_id, description are directly on currentAgent or its config
-        // and will be part of the update payload if we want to preserve them.
-        // For simplicity, if `updateAgent` only updates specified fields, sending only name and KB IDs is fine.
-        // If it overwrites, then we need to fetch and pass all existing settable fields.
-        // voice_id: currentAgent.voice_id, 
-        // model_id: currentAgent.model_id,
-        // llm_model_id: currentAgent.llm_model_id,
-    };
-    
-    // Try to access knowledge_base_ids from common possible paths based on typical SDK structures
-    // The exact path needs to be confirmed by logging currentAgent structure if linter errors persist or runtime issues occur
-    if (currentAgent.conversation_config && Array.isArray(currentAgent.conversation_config.knowledge_base_ids)) {
-      oldDocumentIds = currentAgent.conversation_config.knowledge_base_ids;
-    } else if (Array.isArray(currentAgent.knowledge_base_ids)) {
-      oldDocumentIds = currentAgent.knowledge_base_ids;
-    } else {
-      oldDocumentIds = [];
-    }
-    console.log(`Agent ${agentId} is currently using document IDs: ${oldDocumentIds.join(', ') || 'None'}`);
-
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) {
@@ -57,42 +29,56 @@ export async function POST(req: NextRequest) {
     }
     
     console.log(`Uploading file "${file.name}" to create a new knowledge base document.`);
+    newUploadedDocumentName = file.name;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const fileBlob = new Blob([fileBuffer], { type: file.type || 'application/octet-stream' });
     
-    const uploadedDocResponse: any = await elevenlabs.conversationalAi.createKnowledgeBaseFileDocument({
+    const uploadedDocResponse = await elevenlabs.conversationalAi.createKnowledgeBaseFileDocument({
         file: fileBlob, 
-        name: file.name, 
+        name: file.name,
     });
-    // console.log("Full uploadedDocResponse structure:", JSON.stringify(uploadedDocResponse, null, 2)); // UNCOMMENT TO DEBUG DOC RESPONSE
     
-    newUploadedDocumentId = uploadedDocResponse.id; // Corrected: Use .id based on runtime logs
-    if (!newUploadedDocumentId) {
+    if (!uploadedDocResponse || !uploadedDocResponse.id) {
         console.error('Failed to get ID from upload response:', uploadedDocResponse);
-        throw new Error('Failed to create or retrieve ID for the uploaded file.');
+        const responseDetails = typeof uploadedDocResponse === 'object' ? JSON.stringify(uploadedDocResponse) : uploadedDocResponse;
+        throw new Error(`Failed to create or retrieve ID for the uploaded file. Response: ${responseDetails}`);
     }
-    console.log(`File uploaded. New Document ID: ${newUploadedDocumentId}`);
+    newUploadedDocumentId = uploadedDocResponse.id;
+    console.log(`File uploaded to Knowledge Base. New Document ID: ${newUploadedDocumentId}, Name: ${newUploadedDocumentName}`);
 
-    agentUpdatePayload.knowledge_base_ids = [newUploadedDocumentId];
-    console.log(`Updating agent ${agentId} to use only new document ID: ${newUploadedDocumentId}`);
-    // Ensure the update payload contains all necessary fields for an agent update if the API overwrites missing ones.
-    // If `name` and `knowledge_base_ids` are the only fields changing, this is fine.
-    await elevenlabs.conversationalAi.updateAgent(agentId, agentUpdatePayload);
-    console.log(`Agent ${agentId} successfully updated.`);
+    console.log(`Updating agent ${agentId} to include new document ID: ${newUploadedDocumentId}`);
+    
+    const currentAgent = await elevenlabs.conversationalAi.getAgent(agentId);
+    
+    let existingKnowledgeBaseEntries: any[] = [];
+    if (currentAgent.conversation_config?.agent?.prompt?.knowledge_base && Array.isArray(currentAgent.conversation_config.agent.prompt.knowledge_base)) {
+        existingKnowledgeBaseEntries = currentAgent.conversation_config.agent.prompt.knowledge_base;
+    }
 
-    if (oldDocumentIds.length > 0) {
-      console.log(`Cleaning up ${oldDocumentIds.length} old documents...`);
-      for (const oldDocId of oldDocumentIds) {
-        if (oldDocId === newUploadedDocumentId) continue; 
-        try {
-          console.log(`Deleting old document ID: ${oldDocId}`);
-          await elevenlabs.conversationalAi.deleteKnowledgeBaseDocument(oldDocId);
-          console.log(`Successfully deleted old document: ${oldDocId}`);
-        } catch (cleanupError: any) {
-          console.error(`Failed to delete old document ${oldDocId}:`, cleanupError.message);
+    if (!existingKnowledgeBaseEntries.find(doc => doc.id === newUploadedDocumentId)) {
+        existingKnowledgeBaseEntries.push({
+            id: newUploadedDocumentId,
+            name: newUploadedDocumentName, 
+            type: "file", 
+            usage_mode: "auto"
+        });
+    }
+    
+    const agentUpdatePayload = {
+      conversation_config: {
+        ...(currentAgent.conversation_config || {}),
+        agent: {
+          ...(currentAgent.conversation_config?.agent || {}),
+          prompt: {
+            ...(currentAgent.conversation_config?.agent?.prompt || {}),
+            knowledge_base: existingKnowledgeBaseEntries
+          }
         }
       }
-    }
+    };
+
+    await elevenlabs.conversationalAi.updateAgent(agentId, agentUpdatePayload);
+    console.log(`Agent ${agentId} successfully updated to use document ${newUploadedDocumentId}.`);
 
     return NextResponse.json({
       message: 'Document processed, agent knowledge base updated successfully.',
@@ -101,15 +87,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Error during ElevenLabs API interaction:', error);
-    // Attempt to clean up the newly uploaded document if it was created and an error occurred afterwards
-    // before the agent was successfully linked to it (or if linking failed).
-    if (newUploadedDocumentId && (!agentUpdatePayload.knowledge_base_ids || !agentUpdatePayload.knowledge_base_ids.includes(newUploadedDocumentId))) {
+    if (newUploadedDocumentId) {
         try {
-            console.warn(`Attempting to cleanup newly uploaded document ${newUploadedDocumentId} due to error: ${error.message}`);
+            console.warn(`Attempting to cleanup newly uploaded document ${newUploadedDocumentId} from Knowledge Base due to error: ${error.message}`);
             await elevenlabs.conversationalAi.deleteKnowledgeBaseDocument(newUploadedDocumentId);
-            console.warn(`Successfully cleaned up document ${newUploadedDocumentId}`);
+            console.warn(`Successfully cleaned up document ${newUploadedDocumentId} from Knowledge Base`);
         } catch (cleanupErr: any) {
-            console.error(`Failed to cleanup document ${newUploadedDocumentId} during error handling:`, cleanupErr.message);
+            console.error(`Failed to cleanup document ${newUploadedDocumentId} from Knowledge Base during error handling:`, cleanupErr.message);
         }
     }
     let errorMessage = 'An unknown error occurred.';
