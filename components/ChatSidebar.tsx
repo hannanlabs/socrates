@@ -46,11 +46,15 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
       const newChatId = await createNewChat(user.id) as string | null;
       
       if (newChatId && typeof newChatId === 'string') {
-        // Step 2: Fetch the full chat object using the new ID
+        // Step 2: Set a friendly title instead of the default ID
+        const defaultTitle = "New Conversation";
+        await updateChatTitle(newChatId, defaultTitle);
+        
+        // Step 3: Fetch the full chat object using the new ID
         const newChatObject = await getChatById(newChatId);
 
         if (newChatObject && typeof newChatObject === 'object' && 'id' in newChatObject) {
-          // Now we have the full Chat object
+          // Now we have the full Chat object with friendly title
           setChats(prevChats => 
             [newChatObject, ...prevChats].sort((a, b) => 
               new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -59,7 +63,8 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
           onSelectChat(newChatObject.id); // Select the new chat
         } else {
           console.error("Failed to fetch details for newly created chat. ID:", newChatId);
-          // Handle error - perhaps the chat was created but couldn't be fetched immediately
+          // Still select the chat even if details fetch failed
+          onSelectChat(newChatId);
         }
       } else {
         console.error("Failed to create new chat: No ID returned or invalid ID format", newChatId);
