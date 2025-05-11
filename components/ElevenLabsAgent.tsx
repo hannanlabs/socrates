@@ -29,7 +29,6 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   onSpeakingStatusChange, 
   onNewMessage 
 }) => {
-  const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(true); 
   const [statusMessage, setStatusMessage] = useState<string | null>('Paused - Click Play to Start');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -176,14 +175,6 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     };
   }, [isPaused, agentId, startConversation, sdkStatus, isConnecting, elevenLabsConversation]);
 
-  const toggleMute = async () => {
-    try {
-      await elevenLabsConversation.setVolume({ volume: isMuted ? 1.0 : 0.0 });
-      setIsMuted(!isMuted);
-    } catch (error) {
-      console.error('Failed to change volume:', error);
-    }
-  };
 
   const togglePause = () => {
     const nextPausedState = !isPaused;
@@ -234,14 +225,6 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
             </button>
           )}
           
-          <button 
-            className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
-            onClick={toggleMute}
-            disabled={(sdkStatus !== 'connected' && !isConnecting) || isPaused}
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
         </div>
       </div>
       
