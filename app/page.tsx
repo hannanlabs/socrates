@@ -20,7 +20,7 @@ export default function ChatPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0D0D0D] text-white">
         <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#E50041] border-t-transparent"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#E50041] border-t-transparent"></div>
           <p className="text-lg">Loading...</p>
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function ChatPage() {
     <Suspense fallback={
       <div className="flex h-screen items-center justify-center bg-[#0D0D0D] text-white">
         <div className="text-center">
-          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#E50041] border-t-transparent"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#E50041] border-t-transparent"></div>
           <p className="text-lg">Loading chat...</p>
         </div>
       </div>
