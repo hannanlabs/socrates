@@ -24,6 +24,10 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // New state for document processing
+  const [isProcessingDocument, setIsProcessingDocument] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+
   // This effect syncs URL to state changes
   useEffect(() => {
     if (isInitialMount.current) {
@@ -52,12 +56,14 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
 
   const handleSelectChat = (chatId: string | null) => {
     setSelectedChatId(chatId)
-    setSelectedFile(null); // Clear file if user switches chat
+    setSelectedFile(null);
+    setDocumentError(null); // Clear document error when chat changes
   }
 
   const handleNewChat = () => {
     setSelectedChatId(null)
-    setSelectedFile(null); // Clear file if user starts a new blank chat
+    setSelectedFile(null);
+    setDocumentError(null); // Clear document error for new chat
     if (searchParams.get("id")) {
       router.push('/', { scroll: false })
     }
@@ -66,6 +72,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
 
   // Function to programmatically click the hidden file input
   const initiateDocumentUploadProcess = () => {
+    setDocumentError(null); // Clear previous errors
     fileInputRef.current?.click();
   };
 
@@ -74,9 +81,8 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setDocumentError(null); // Clear error if a new file is selected
       console.log("File selected in ChatPageContent:", file.name);
-      // At this point, ChatView will receive the updated selectedFile prop
-      // and can display UI for the user to confirm using this document.
     } else {
       setSelectedFile(null);
     }
@@ -89,45 +95,75 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   // Function to process the document and start/update the chat
   const handleStartConversationWithDocument = async () => {
     if (!selectedFile) {
-      alert("No file selected.");
+      setDocumentError("No file selected. Please choose a document first.");
       return;
     }
-    console.log("Processing document for conversation:", selectedFile.name);
-    // TODO: Full Implementation Required
-    // 1. Get agentId (from user profile or a default)
-    // 2. Call backend API to: 
-    //    a. Clear agent's existing knowledge base (if that's the strategy)
-    //    b. Upload selectedFile to agent's knowledge base
-    // 3. If successful, ensure the ChatView is set up for this new context.
-    //    This might involve setting a new selectedChatId if each doc chat is new,
-    //    or re-keying/refreshing the current ChatView.
-    //    For now, we will just log and clear the file to show the flow.
     
-    // Placeholder: Simulate starting a new chat session context
-    // This might involve creating a new chat ID in a real scenario
-    // For now, if no chat is selected, select a dummy one to show ChatView
-    // or re-key the current one. 
-    if (!selectedChatId) {
-      // This is a simplified way to force ChatView to show if it wasn't.
-      // In a real app, you'd create a new chat record and get its ID.
-      // For now, we'll just ensure a view is active. A better approach would be
-      // to create a new chat in `handleNewChat` and pass its ID for ChatView.
-      // setSelectedChatId("document-chat-" + Date.now()); // Example of forcing a new view
-      // For now, we'll assume that if `handleStartConversationWithDocument` is called,
-      // we are either in an existing chat (selectedChatId is set) or we want to start one.
-      // If selectedChatId is null, we should ideally create a new chat first via handleNewChat or similar.
-      // We'll rely on ChatView being visible to show the doc upload UI elements.
-      console.log("Starting new chat for document. Current selectedChatId:", selectedChatId)
-      // If we always want a *new* chat for a document:
-      // const newDocChatId = "doc-" + Date.now();
-      // Call API to create this chat, then:
-      // setSelectedChatId(newDocChatId);
-      // router.push(`/?id=${newDocChatId}`, { scroll: false });
-    }
+    setIsProcessingDocument(true);
+    setDocumentError(null);
+    console.log("Processing document for conversation:", selectedFile.name);
 
-    alert(`Document "${selectedFile.name}" would be processed here.`);
-    // setSelectedFile(null); // Clear after processing, or ChatView can do it
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const response = await fetch('/api/agent/set-document', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Error from backend:", result);
+        throw new Error(result.error || `Failed to process document (status ${response.status})`);
+      }
+
+      console.log("Document processed successfully by backend:", result);
+      alert(`Document "${selectedFile.name}" processed successfully! Agent KB updated. New Document ID: ${result.newDocumentId}`);
+      
+      // Option 1: Start a new chat for this document
+      // This ensures a clean slate and context for the agent.
+      // You might want to generate a title for this new chat based on the document name.
+      // const newChatTitle = `Chat about ${selectedFile.name}`.substring(0, 50); // Example title
+      // const newChat = await createNewChatInDb(user.id, newChatTitle); // You'd need this function
+      // if (newChat && newChat.id) {
+      //   setSelectedChatId(newChat.id);
+      //   router.push(`/?id=${newChat.id}`, { scroll: false });
+      // }
+
+      // Option 2: Re-key the current ChatView if staying in the same chat ID context
+      // This is simpler if you don't want to create a new DB entry for each doc chat, but ensure agent context is fresh.
+      // If selectedChatId is null (e.g. user uploaded doc before starting any chat from sidebar)
+      // we might need to initialize a new chat here.
+      if (!selectedChatId) {
+         // Forcing a new chat state if none selected. Ideally, create a chat in DB.
+         // This is a placeholder for proper new chat creation logic.
+         // const tempNewChatId = "doc-chat-" + Date.now();
+         // setSelectedChatId(tempNewChatId);
+         // router.push(`/?id=${tempNewChatId}`, { scroll: false });
+         // For now, we can just call handleNewChat and the user can click into it again
+         // or we rely on the chat view updating if it was already visible.
+         // The key part is the agent's knowledge base *is* updated.
+         console.log("Document processed. Agent KB updated. Consider starting a new chat or refreshing context.")
+      }
+      // If an existing chat is selected, its context with the agent will now use the new document.
+      // The existing messages in ChatView remain, but new interactions use the new KB.
+
+      setSelectedFile(null); // Clear the file after successful processing
+
+    } catch (error: any) {
+      console.error("Failed to process document:", error);
+      setDocumentError(error.message || "An unexpected error occurred while sending the document.");
+    } finally {
+      setIsProcessingDocument(false);
+    }
   };
+
+  const clearSelectedFileAndError = () => {
+    setSelectedFile(null);
+    setDocumentError(null);
+  }
 
   return (
     <div className="flex h-screen bg-[#171717] text-white overflow-hidden">
@@ -159,7 +195,9 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
             initiateDocumentUpload={initiateDocumentUploadProcess}
             onDocumentReadyToProcess={handleStartConversationWithDocument}
             selectedFile={selectedFile}
-            clearSelectedFile={() => setSelectedFile(null)} // Allow ChatView to clear the file
+            clearSelectedFile={clearSelectedFileAndError} // Updated to clear error too
+            isProcessingDocument={isProcessingDocument} // Pass loading state
+            documentProcessingError={documentError} // Pass error state
           />
         ) : (
           // Welcome screen when no chat is selected
@@ -171,7 +209,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
               </svg>
               <h2 className="text-2xl font-semibold text-gray-300 mb-3">Welcome to Your Chat</h2>
               <p className="text-gray-400 mb-8">
-                Select a conversation from the sidebar, or <button onClick={handleNewChat} className="text-[#E50041] hover:underline focus:outline-none">start a new one</button>.
+                Select a conversation from the sidebar
               </p>
               {/* Removed document upload UI from here */}
             </div>

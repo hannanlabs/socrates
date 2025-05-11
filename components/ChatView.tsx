@@ -27,6 +27,8 @@ interface ChatViewProps {
   onDocumentReadyToProcess: () => Promise<void>;
   selectedFile: File | null;
   clearSelectedFile: () => void;
+  isProcessingDocument?: boolean;
+  documentProcessingError?: string | null;
 }
 
 const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
@@ -115,7 +117,9 @@ export function ChatView({
   initiateDocumentUpload,
   onDocumentReadyToProcess,
   selectedFile,
-  clearSelectedFile 
+  clearSelectedFile, 
+  isProcessingDocument,
+  documentProcessingError
 }: ChatViewProps) {
   const { user: authUser } = useAuth();
   const user = propUser || authUser;
@@ -413,6 +417,11 @@ export function ChatView({
       </div>
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
+        {documentProcessingError && (
+          <div className="mb-2 p-2.5 bg-red-700 bg-opacity-30 text-red-300 border border-red-700 rounded-md text-xs text-center">
+            Error: {documentProcessingError}
+          </div>
+        )}
         {selectedFile && (
           <div className="mb-2 p-3 bg-[#252525] rounded-md flex items-center justify-between text-sm">
             <div className="flex items-center overflow-hidden">
@@ -427,16 +436,25 @@ export function ChatView({
             <div className="flex items-center flex-shrink-0">
               <button
                 onClick={async () => {
-                  await onDocumentReadyToProcess();
+                  if (!isProcessingDocument) {
+                    await onDocumentReadyToProcess();
+                  }
                 }}
-                className="flex items-center bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition-colors mr-2"
+                disabled={isProcessingDocument}
+                className={`flex items-center bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition-colors mr-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                 title="Use this document for the conversation"
               >
-                <CheckCircle size={14} className="mr-1" /> Use Document
+                {isProcessingDocument ? (
+                  <Loader2 size={14} className="mr-1.5 animate-spin" />
+                ) : (
+                  <CheckCircle size={14} className="mr-1" />
+                )}
+                {isProcessingDocument ? "Processing..." : "Use Document"}
               </button>
               <button
                 onClick={clearSelectedFile}
-                className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors"
+                disabled={isProcessingDocument}
+                className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 title="Clear selected document"
               >
                 <X size={14} />
@@ -454,7 +472,8 @@ export function ChatView({
           />
           <button
             onClick={initiateDocumentUpload}
-            className="ml-3 p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors"
+            disabled={isProcessingDocument}
+            className="ml-3 p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             title="Upload a document"
           >
             <Paperclip size={20} />
