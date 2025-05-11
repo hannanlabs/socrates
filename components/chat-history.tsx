@@ -3,9 +3,9 @@
 import type React from "react"
 
 import { useEffect, useState } from "react"
-import { Search, Trash2 } from "lucide-react"
+import { Search, Trash2, Edit2, Save, X } from "lucide-react"
 import { useAuth } from "@/lib/supabase/auth-context"
-import { getUserChats, archiveChat } from "@/lib/supabase/chat-service"
+import { getUserChats, archiveChat, updateChatTitle } from "@/lib/supabase/chat-service"
 import type { Database } from "@/lib/supabase/database.types"
 import { useRouter } from "next/navigation"
 
@@ -15,6 +15,8 @@ export function ChatHistory() {
   const [chats, setChats] = useState<Chat[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [editingChatId, setEditingChatId] = useState<string | null>(null)
+  const [editedTitle, setEditedTitle] = useState("")
   const { user } = useAuth()
   const router = useRouter()
 
@@ -49,7 +51,48 @@ export function ChatHistory() {
     }
   }
 
+  const handleEditTitle = (chatId: string, currentTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingChatId(chatId)
+    setEditedTitle(currentTitle)
+  }
+
+  const handleSaveTitle = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    if (editedTitle.trim()) {
+      try {
+        const success = await updateChatTitle(chatId, editedTitle)
+        if (success) {
+          // Update the title in the local state
+          setChats(chats.map(chat => 
+            chat.id === chatId ? { ...chat, title: editedTitle } : chat
+          ))
+          console.log(`Updated chat title to: ${editedTitle}`)
+        } else {
+          console.error("Failed to update chat title")
+        }
+      } catch (error) {
+        console.error("Error updating chat title:", error)
+      }
+    }
+    
+    // Reset editing state
+    setEditingChatId(null)
+    setEditedTitle("")
+  }
+
+  const handleCancelEdit = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingChatId(null)
+    setEditedTitle("")
+  }
+
   const handleChatClick = (chatId: string) => {
+    // Don't navigate if we're in editing mode
+    if (editingChatId === chatId) {
+      return
+    }
     router.push(`/chat/${chatId}`)
   }
 
@@ -114,17 +157,57 @@ export function ChatHistory() {
               className="bg-[#222222] border border-gray-700 rounded-lg p-4 hover:bg-[#2A2A2A] cursor-pointer flex justify-between items-start"
               onClick={() => handleChatClick(chat.id)}
             >
-              <div>
-                <h3 className="text-gray-200 font-medium">{chat.title}</h3>
-                <p className="text-gray-400 text-sm">Last message {formatDate(chat.updated_at)}</p>
+              <div className="flex-1 mr-2">
+                {editingChatId === chat.id ? (
+                  <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="text"
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      className="flex-1 bg-[#333333] text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={(e) => handleSaveTitle(chat.id, e)}
+                      className="ml-2 text-gray-400 hover:text-green-500 p-1"
+                      title="Save title"
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="ml-1 text-gray-400 hover:text-red-500 p-1"
+                      title="Cancel editing"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-gray-200 font-medium">{chat.title}</h3>
+                    <p className="text-gray-400 text-sm">Last message {formatDate(chat.updated_at)}</p>
+                  </>
+                )}
               </div>
-              <button
-                onClick={(e) => handleArchiveChat(chat.id, e)}
-                className="text-gray-400 hover:text-red-500 p-1"
-                title="Archive chat"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              
+              <div className="flex items-center">
+                {editingChatId !== chat.id && (
+                  <button
+                    onClick={(e) => handleEditTitle(chat.id, chat.title, e)}
+                    className="text-gray-400 hover:text-blue-500 p-1 mr-1"
+                    title="Edit title"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => handleArchiveChat(chat.id, e)}
+                  className="text-gray-400 hover:text-red-500 p-1"
+                  title="Archive chat"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
