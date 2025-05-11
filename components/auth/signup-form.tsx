@@ -1,12 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useAuth } from "@/lib/supabase/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function SignupForm() {
   const [name, setName] = useState("")
@@ -32,69 +30,90 @@ export function SignupForm() {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>Enter your details to create a new account</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-gray-200">
-              Name
-            </label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              required
-              className="bg-[#222222] border-gray-700 text-white"
-            />
+    <div className="flex h-screen w-full">
+      {/* Left side - Signup form */}
+      <div className="w-full md:w-1/2 bg-black p-8 flex flex-col justify-center">
+        <div className="max-w-md mx-auto w-full">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-8">Sign Up</h1>
           </div>
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-gray-200">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              required
-              className="bg-[#222222] border-gray-700 text-white"
-            />
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm text-white">
+                Name
+              </label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter Name"
+                required
+                className="bg-black border-[0.5px] border-gray-700 text-white rounded-sm h-12 px-4"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm text-white">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter Email"
+                required
+                className="bg-black border-[0.5px] border-gray-700 text-white rounded-sm h-12 px-4"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm text-white">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter Password"
+                required
+                minLength={6}
+                className="bg-black border-[0.5px] border-gray-700 text-white rounded-sm h-12 px-4"
+              />
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 rounded-sm transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "SIGN UP"}
+            </Button>
+          </form>
+
+          <div className="mt-8 text-sm text-gray-400">
+            Already have an account?{" "}
+            <a href="/login" className="text-white hover:underline">
+              Sign in
+            </a>
           </div>
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-gray-200">
-              Password
-            </label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              className="bg-[#222222] border-gray-700 text-white"
-            />
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <Button type="submit" className="w-full bg-[#CC0033]" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Sign up"}
-          </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-gray-400">
-          Already have an account?{" "}
-          <a href="/login" className="text-[#CC0033] hover:underline">
-            Login
-          </a>
-        </p>
-      </CardFooter>
-    </Card>
+        </div>
+      </div>
+
+      {/* Right side - Image */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-gray-900 to-black relative">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-50"
+          style={{
+            backgroundImage: "url('/socrates.png')",
+            backgroundSize: "cover",
+          }}
+        ></div>
+      </div>
+    </div>
   )
 }

@@ -1,18 +1,27 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/supabase/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LucideChevronLeft, LucideChevronRight } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { signIn } = useAuth()
+  const { signIn, user } = useAuth()
+  const router = useRouter()
+
+  // Effect to handle redirect when user is authenticated
+  useEffect(() => {
+    if (user) {
+      router.push("/")
+    }
+  }, [user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,6 +30,8 @@ export function LoginForm() {
 
     try {
       await signIn(email, password)
+      // Force a hard navigation to ensure fresh state
+      window.location.href = "/"
     } catch (err) {
       setError("Invalid email or password")
       console.error(err)
