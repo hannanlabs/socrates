@@ -97,14 +97,11 @@ export default function ChatPage() {
 
   // Export chat to TXT format
   const exportToTxt = () => {
-    let content = `${chatTitle}\n`;
+    let content = `${chatTitle}\n\n`;
 
     messages.forEach(message => {
       const speaker = message.role === "user" ? "You" : "AI Assistant";
-      const time = formatTimestamp(message.created_at);
-      const date = formatDate(message.created_at);
-      
-      content += `[${date} ${time}] ${speaker}:\n${message.content}\n\n`;
+      content += `${speaker}:\n${message.content}\n\n`;
     });
 
     // Create blob and download
@@ -131,10 +128,6 @@ export default function ChatPage() {
     // Title
     doc.setFontSize(16);
     doc.text(chatTitle, margin, yPosition);
-    yPosition += 10;
-    
-    // Export date
-    doc.setFontSize(10);
     yPosition += 15;
     
     // Messages
@@ -142,12 +135,10 @@ export default function ChatPage() {
     
     messages.forEach(message => {
       const speaker = message.role === "user" ? "You" : "AI Assistant";
-      const time = formatTimestamp(message.created_at);
-      const date = formatDate(message.created_at);
       
-      // Header (speaker & timestamp)
+      // Speaker name
       doc.setFont("helvetica", 'bold');
-      doc.text(`[${date} ${time}] ${speaker}:`, margin, yPosition);
+      doc.text(`${speaker}:`, margin, yPosition);
       yPosition += 7;
       
       // Message content (with text wrapping)
@@ -187,19 +178,16 @@ export default function ChatPage() {
       })
     );
     
-    
     // Messages
     messages.forEach(message => {
       const speaker = message.role === "user" ? "You" : "AI Assistant";
-      const time = formatTimestamp(message.created_at);
-      const date = formatDate(message.created_at);
       
-      // Header (speaker & timestamp)
+      // Speaker name
       docParagraphs.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `[${date} ${time}] ${speaker}:`,
+              text: `${speaker}:`,
               bold: true
             })
           ]
