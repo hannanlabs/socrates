@@ -30,9 +30,9 @@ export function SignupForm() {
   }
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex w-full h-full min-h-screen">
       {/* Left side - Signup form */}
-      <div className="w-full md:w-1/2 bg-black p-8 flex flex-col justify-center">
+      <div className="w-full md:w-1/2 bg-black p-4 sm:p-8 flex flex-col justify-center overflow-y-auto">
         <div className="max-w-md mx-auto w-full">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-8">Sign Up</h1>
