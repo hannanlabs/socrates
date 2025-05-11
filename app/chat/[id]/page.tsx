@@ -98,7 +98,6 @@ export default function ChatPage() {
   // Export chat to TXT format
   const exportToTxt = () => {
     let content = `${chatTitle}\n`;
-    content += `Exported on ${new Date().toLocaleString()}\n\n`;
 
     messages.forEach(message => {
       const speaker = message.role === "user" ? "You" : "AI Assistant";
@@ -136,7 +135,6 @@ export default function ChatPage() {
     
     // Export date
     doc.setFontSize(10);
-    doc.text(`Exported on ${new Date().toLocaleString()}`, margin, yPosition);
     yPosition += 15;
     
     // Messages
@@ -189,15 +187,6 @@ export default function ChatPage() {
       })
     );
     
-    // Export date
-    docParagraphs.push(
-      new Paragraph({
-        text: `Exported on ${new Date().toLocaleString()}`,
-        spacing: {
-          after: 400
-        }
-      })
-    );
     
     // Messages
     messages.forEach(message => {
