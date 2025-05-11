@@ -112,8 +112,6 @@ export function ChatView({ chatId }: ChatViewProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [userInput, setUserInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const agentInstanceId = `agent-for-chat-${chatId}`;
 
@@ -207,44 +205,6 @@ export function ChatView({ chatId }: ChatViewProps) {
     }
   }, [chatId, user]);
 
-  const handleSendUserMessage = async () => {
-    if (!userInput.trim() || !user || !chatId) return;
-    setIsSending(true);
-    const currentInput = userInput.trim();
-
-    const optimisticUserMessage: Message = {
-        id: `temp-user-${Date.now()}`,
-        chat_id: chatId,
-        role: "user",
-        content: currentInput,
-        created_at: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, optimisticUserMessage]);
-    setUserInput("");
-
-    try {
-      const success = await addMessageToChat(
-        chatId,
-        "user",
-        currentInput
-      );
-
-      if (!success) {
-        setMessages(prev => prev.filter(m => m.id !== optimisticUserMessage.id));
-        setUserInput(currentInput);
-        console.warn("Failed to save user message to DB, optimistic update reverted.");
-      } else {
-        console.log("User message saved to DB");
-      }
-    } catch (error) {
-      console.error("Error sending user message to DB:", error);
-      setMessages(prev => prev.filter(m => m.id !== optimisticUserMessage.id));
-      setUserInput(currentInput);
-    } finally {
-      setIsSending(false);
-    }
-  };
-  
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -382,7 +342,7 @@ export function ChatView({ chatId }: ChatViewProps) {
               </Canvas>
             </div>
             <h2 className="text-xl font-semibold text-gray-200 mt-4">Hello! How can I help you today?</h2>
-            <p className="text-sm text-gray-500">Use the controls below to speak or type.</p>
+            <p className="text-sm text-gray-500">Click the Play button below to start speaking</p>
           </div>
         ) : (
             messages.map((message) => (
@@ -406,30 +366,6 @@ export function ChatView({ chatId }: ChatViewProps) {
       </div>
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
-        <div className="flex items-center bg-[#252525] rounded-lg p-1.5">
-          <textarea
-            rows={1}
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendUserMessage();
-              }
-            }}
-            placeholder={isAgentSpeaking ? "AI is speaking..." : (messages.length === 0 ? "Speak or type to begin..." : "Type your message...")}
-            className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-500 focus:outline-none resize-none px-2 py-1.5 max-h-24"
-            disabled={isSending || (isAgentSpeaking && messages.length > 0) }
-          />
-          <button 
-            onClick={handleSendUserMessage} 
-            disabled={!userInput.trim() || isSending || (isAgentSpeaking && messages.length > 0)}
-            className="ml-2 p-2 rounded-md bg-[#E50041] hover:bg-opacity-80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSending ? <Loader2 className="h-5 w-5 animate-spin"/> : <Send className="h-5 w-5" />}
-          </button>
-        </div>
-        
         <ElevenLabsAgent 
             key={agentInstanceId}
             agentId="UvPz3Vgu9O6iI0KDWJDT"
