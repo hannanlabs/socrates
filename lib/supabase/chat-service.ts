@@ -35,7 +35,7 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
   return data
 }
 
-export async function createNewChat(initialMessage: string): Promise<string | null> {
+export async function createNewChat(initialTitle: string): Promise<string | null> {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
@@ -45,12 +45,12 @@ export async function createNewChat(initialMessage: string): Promise<string | nu
 
   const authenticatedUserId = user.id
 
-  // Create a new chat
+  // Create a new chat with the provided title
   const { data: chatData, error: chatError } = await supabase
     .from("chats")
     .insert({
       user_id: authenticatedUserId,
-      title: initialMessage.slice(0, 50) + (initialMessage.length > 50 ? "..." : ""),
+      title: initialTitle.slice(0, 50) + (initialTitle.length > 50 ? "..." : ""),
     })
     .select()
 
@@ -59,23 +59,7 @@ export async function createNewChat(initialMessage: string): Promise<string | nu
     return null
   }
 
-  const chatId = chatData[0].id
-
-  // Add the initial message
-  const { error: messageError } = await supabase.from("messages").insert({
-    chat_id: chatId,
-    role: "user",
-    content: initialMessage,
-  })
-
-  if (messageError) {
-    console.error("Error creating message:", messageError)
-    // Delete the chat if message creation failed
-    await supabase.from("chats").delete().eq("id", chatId)
-    return null
-  }
-
-  return chatId
+  return chatData[0].id
 }
 
 export async function addMessageToChat(chatId: string, role: "user" | "assistant", content: string): Promise<boolean> {

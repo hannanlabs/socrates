@@ -166,10 +166,12 @@ const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "XR5yYf
         console.log(`Adding message to chat ${chatIdRef.current}:`, message);
         await addMessageToChat(chatIdRef.current, message.speaker, message.text);
       }
-      // If we have a first message from AI without a chat created yet, create a chat first
+      // If we have a first message from AI without a chat created yet, create a chat with AI message as title
       else if (message.speaker === 'assistant' && !chatIdRef.current) {
-        console.log("Creating new chat for AI response with placeholder user message");
-        const newChatId = await createNewChat("New conversation");
+        console.log("Creating new chat with AI's greeting as title");
+        // Use the AI's first message as the chat title (truncated if needed)
+        const chatTitle = message.text.slice(0, 50) + (message.text.length > 50 ? "..." : "");
+        const newChatId = await createNewChat(chatTitle);
         
         if (newChatId) {
           console.log("New chat created with ID:", newChatId);
