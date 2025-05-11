@@ -14,7 +14,7 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
   const [signupComplete, setSignupComplete] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState("")
-  const { signUp } = useAuth()
+  const { signUp, checkIfUserExists } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,15 +23,46 @@ export function SignupForm() {
     setSignupComplete(false)
 
     try {
+      // Clear previous state
+      setSubmittedEmail("")
+      
+      console.log("Checking if user exists:", email);
+      // First check if the user already exists
+      const userExists = await checkIfUserExists(email);
+      console.log("User exists check result:", userExists);
+      
+      if (userExists) {
+        console.log("User already exists, preventing signup");
+        setError("An account with this email already exists. Please sign in instead.");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("User doesn't exist, proceeding with signup");
+      // If user doesn't exist, proceed with signup
       setSubmittedEmail(email)
       await signUp(email, password, name)
+      
+      console.log("Signup completed successfully");
       setSignupComplete(true)
       setName("")
       setEmail("")
       setPassword("")
-    } catch (err) {
-      setError("Error creating account. Please try again.")
-      console.error(err)
+    } catch (err: any) {
+      // More specific error handling
+      console.error("Signup error:", err)
+      
+      // Additional check for user already exists in catch block
+      if (err.message?.includes("already registered") || 
+          err.message?.includes("already been registered")) {
+        setError("An account with this email already exists. Please sign in instead.");
+      } else if (err.message?.includes("Invalid email")) {
+        setError("Please enter a valid email address.")
+      } else if (err.message?.includes("Password")) {
+        setError("Password doesn't meet requirements. It should be at least 6 characters.")
+      } else {
+        setError("Error creating account. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }

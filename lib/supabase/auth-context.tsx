@@ -13,6 +13,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, name: string) => Promise<void>
   signOut: () => Promise<void>
+  checkIfUserExists: (email: string) => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -61,6 +62,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe()
     }
   }, [])
+
+  // New function to check if a user with the given email already exists
+  const checkIfUserExists = async (email: string): Promise<boolean> => {
+    try {
+      // First try to sign in with a non-existent method to check if the user exists
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: "check-only-not-real-auth-" + Math.random() // Random to ensure no accidental login
+      });
+      
+      // If we get an error that includes the phrase "Invalid login credentials", 
+      // this means the user exists but the password is wrong
+      if (error && error.message?.includes("Invalid login credentials")) {
+        console.log("User exists based on invalid credentials response");
+        return true;
+      }
+      
+      // Alternative method: try to sign up with the same email with dummy data
+      // If this fails with "User already registered", then the user exists
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: "temporary-password-" + Math.random().toString(36).slice(2, 10),
+        options: { 
+          data: { checkOnly: true } 
+        }
+      });
+      
+      if (signUpError && (
+        signUpError.message?.includes("User already registered") || 
+        signUpError.message?.includes("already been registered")
+      )) {
+        console.log("User exists based on signup error:", signUpError.message);
+        return true;
+      }
+      
+      // If neither check triggered a "user exists" condition, assume they don't exist
+      return false;
+    } catch (err) {
+      console.error("Unexpected error checking if user exists:", err);
+      // To be safe, if we can't determine, assume false - will show error on actual signup attempt
+      return false;
+    }
+  }
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -113,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, checkIfUserExists }}>
       {children}
     </AuthContext.Provider>
   )
