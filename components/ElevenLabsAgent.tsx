@@ -35,6 +35,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const connectionAttemptRef = useRef<number>(0);
   const sessionRef = useRef<string | null>(null);
+  const intentionallyPaused = useRef<boolean>(true);
   
   const onNewMessageRef = useRef(onNewMessage);
   
@@ -53,16 +54,22 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     onDisconnect: () => {
       console.log('(ElevenLabs SDK) Disconnected');
       sessionRef.current = null;
-      if (!isPaused) setStatusMessage('Disconnected');
       
-      if (retryCount < 3 && !isPaused && !isConnecting) {
-        console.log(`Attempting to reconnect (attempt ${retryCount + 1}/3)...`);
-        setRetryCount(prevCount => prevCount + 1);
-        setTimeout(() => {
-          if (!isPaused && !isConnecting && elevenLabsConversation.status !== 'connected') {
-            startConversation();
-          }
-        }, 2000);
+      // Only set disconnected message and attempt to reconnect if not intentionally paused
+      if (!intentionallyPaused.current) {
+        if (!isPaused) setStatusMessage('Disconnected');
+        
+        if (retryCount < 3 && !isPaused && !isConnecting) {
+          console.log(`Attempting to reconnect (attempt ${retryCount + 1}/3)...`);
+          setRetryCount(prevCount => prevCount + 1);
+          setTimeout(() => {
+            if (!isPaused && !isConnecting && elevenLabsConversation.status !== 'connected' && !intentionallyPaused.current) {
+              startConversation();
+            }
+          }, 2000);
+        }
+      } else {
+        console.log('Disconnected due to intentional pause - not attempting to reconnect');
       }
     },
     onError: (error: any) => {
@@ -152,17 +159,25 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   useEffect(() => {
     console.log(`Lifecycle Effect: isPaused=${isPaused}, agentId=${agentId}, sdkStatus=${sdkStatus}, isConnecting=${isConnecting}`);
     
+    // Update the intentional pause ref when isPaused changes
+    intentionallyPaused.current = isPaused;
+    
     if (!isPaused) {
+      // If not paused and not already connected or connecting, start conversation
       if (sdkStatus !== 'connected' && !isConnecting && !sessionRef.current) {
         console.log('Lifecycle Effect: Unpaused, attempting to start conversation.');
         startConversation();
       }
     } else {
-      if (sessionRef.current) { 
-        console.log('Lifecycle Effect: Paused state, ending session.');
-        elevenLabsConversation.endSession();
-        sessionRef.current = null; 
-      }
+      // When paused, always try to end the session regardless of sessionRef
+      console.log('Lifecycle Effect: Paused state, ending session.');
+      elevenLabsConversation.endSession();
+      sessionRef.current = null;
+      setStatusMessage('Paused - Click Play to Start');
+      // Ensure connecting state is reset when paused
+      setIsConnecting(false);
+      // Reset retry count when paused
+      setRetryCount(0);
     }
 
     return () => {
@@ -179,11 +194,25 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   const togglePause = () => {
     const nextPausedState = !isPaused;
     console.log(`togglePause: Setting isPaused to ${nextPausedState}`);
-    setIsPaused(nextPausedState);
+    
+    // Set intentional pause flag first
+    intentionallyPaused.current = nextPausedState;
+    
+    // If switching to paused state, immediately end the session
     if (nextPausedState) {
-        setStatusMessage('Paused - Click Play to Start');
+      console.log('togglePause: Actively ending session due to pause');
+      elevenLabsConversation.endSession();
+      sessionRef.current = null;
+      setRetryCount(0);
+      setIsConnecting(false);
+    }
+    
+    setIsPaused(nextPausedState);
+    
+    if (nextPausedState) {
+      setStatusMessage('Paused - Click Play to Start');
     } else {
-        setStatusMessage('Attempting to connect...');
+      setStatusMessage('Attempting to connect...');
     }
   };
 
