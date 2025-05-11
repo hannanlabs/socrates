@@ -133,7 +133,7 @@ const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
   );
 };
 
-const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "XR5yYfHH1SN8fjv699UX" }) => {
+const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({ agentId = "UvPz3Vgu9O6iI0KDWJDT" }) => {
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const { user } = useAuth();
   const chatIdRef = useRef<string | null>(null);
