@@ -101,3 +101,18 @@ export async function archiveChat(chatId: string): Promise<boolean> {
 
   return true
 }
+
+export async function getChatById(chatId: string): Promise<Chat | null> {
+  const { data, error } = await supabase
+    .from("chats")
+    .select("*")
+    .eq("id", chatId)
+    .single();
+
+  if (error) {
+    console.error("Error fetching chat:", error)
+    return null
+  }
+
+  return data
+}
