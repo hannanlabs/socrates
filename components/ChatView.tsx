@@ -113,6 +113,7 @@ export function ChatView({ chatId }: ChatViewProps) {
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(true);
   const agentInstanceId = `agent-for-chat-${chatId}`;
 
   const scrollToBottom = () => {
@@ -282,6 +283,10 @@ export function ChatView({ chatId }: ChatViewProps) {
     setShowExportMenu(false);
   };
 
+  const handlePauseStateChange = useCallback((paused: boolean) => {
+    setIsPaused(paused);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col justify-center items-center p-4 bg-[#171717]">
@@ -329,9 +334,9 @@ export function ChatView({ chatId }: ChatViewProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth relative">
-        {messages.length === 0 && !isLoading && !error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-gray-400">
+      <div className="flex-1 overflow-y-auto p-4 relative">
+        {!isPaused && (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center text-gray-400">
             <div className="w-full h-[300px] max-w-md mx-auto mb-6">
               <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
                 <ambientLight intensity={0.6} />
@@ -341,28 +346,52 @@ export function ChatView({ chatId }: ChatViewProps) {
                 <AudioVisualizer isSpeaking={isAgentSpeaking} />
               </Canvas>
             </div>
+            <h2 className="text-xl font-semibold text-gray-200 mt-4">
+              {isAgentSpeaking ? "Listening to AI..." : "Speak now..."}
+            </h2>
+            <p className="text-sm text-gray-500 mt-2">
+              {messages.length > 0 ? "Press pause to view conversation" : "Click Pause when you're done"}
+            </p>
+          </div>
+        )}
+        
+        {isPaused && messages.length === 0 && !isLoading && !error && (
+          <div className="w-full h-full flex flex-col items-center justify-center text-center text-gray-400">
+            <div className="w-full h-[300px] max-w-md mx-auto mb-6">
+              <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
+                <ambientLight intensity={0.6} />
+                <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
+                <pointLight position={[-5, -5, -5]} intensity={0.7} color="#E50041" />
+                <FloatingLogo isSpeaking={false} />
+                <AudioVisualizer isSpeaking={false} />
+              </Canvas>
+            </div>
             <h2 className="text-xl font-semibold text-gray-200 mt-4">Hello! How can I help you today?</h2>
             <p className="text-sm text-gray-500">Click the Play button below to start speaking</p>
           </div>
-        ) : (
-            messages.map((message) => (
-            <div
-                key={message.id} 
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+        )}
+        
+        {isPaused && messages.length > 0 && (
+          <div className="space-y-4">
+            {messages.map((msg) => (
+              <div
+                key={msg.id} 
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[70%] px-4 py-2.5 rounded-xl shadow ${ 
-                    message.role === "user" 
+                    msg.role === "user" 
                     ? "bg-gradient-to-r from-[#E50041] to-[#C00031] text-white rounded-br-none" 
                     : "bg-[#252525] text-gray-200 rounded-bl-none" }`}
                 >
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.content}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
                     <div className="text-xs opacity-60 mt-1.5 text-right">
-                        {formatTimestamp(message.created_at)}
+                        {formatTimestamp(msg.created_at)}
                     </div>
                 </div>
-            </div>
-            ))
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
@@ -371,6 +400,7 @@ export function ChatView({ chatId }: ChatViewProps) {
             agentId="UvPz3Vgu9O6iI0KDWJDT"
             onNewMessage={handleNewMessageFromAgent}
             onSpeakingStatusChange={setIsAgentSpeaking}
+            onPauseStateChange={handlePauseStateChange}
         />
       </div>
     </div>

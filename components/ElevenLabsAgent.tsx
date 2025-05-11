@@ -14,6 +14,7 @@ interface ElevenLabsAgentProps {
   agentId: string;
   onSpeakingStatusChange?: (isSpeaking: boolean) => void;
   onNewMessage?: (message: TranscriptEntry) => void;
+  onPauseStateChange?: (isPaused: boolean) => void;
 }
 
 interface SDKMessage {
@@ -27,7 +28,8 @@ interface SDKMessage {
 const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({ 
   agentId, 
   onSpeakingStatusChange, 
-  onNewMessage 
+  onNewMessage,
+  onPauseStateChange
 }) => {
   const [isPaused, setIsPaused] = useState(true); 
   const [statusMessage, setStatusMessage] = useState<string | null>('Paused - Click Play to Start');
@@ -132,6 +134,13 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
       onSpeakingStatusChange(isSpeaking);
     }
   }, [isSpeaking, onSpeakingStatusChange]);
+
+  // Update effect to notify parent about pause state changes
+  useEffect(() => {
+    if (onPauseStateChange) {
+      onPauseStateChange(isPaused);
+    }
+  }, [isPaused, onPauseStateChange]);
 
   const startConversation = useCallback(async () => {
     if (isConnecting || isPaused || sdkStatus === 'connected' || sessionRef.current) return;
