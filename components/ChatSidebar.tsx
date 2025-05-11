@@ -160,7 +160,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
             <div className="flex items-center">
                 {/* Placeholder for company logo/name if needed, like in the image */}
                  <MessageSquare className="h-7 w-7 text-[#E50041] mr-2" />
-                <h1 className="text-xl font-semibold">Socratic</h1>
+                <h1 className="text-xl font-semibold">Socrates</h1>
             </div>
             {/* Settings icon - can be implemented later */}
             {/* <button className="text-gray-400 hover:text-white"><Settings size={20} /></button> */}
