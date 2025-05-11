@@ -18,7 +18,7 @@ interface ElevenLabsAgentProps {
 
 interface SDKMessage {
     message: string;
-    source: Role;
+    source: Role | string;
     type?: string;
     is_final?: boolean;
     text?: string;
@@ -81,19 +81,26 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     onMessage: (message: SDKMessage) => {
       console.log('New message from SDK:', message);
       
-      // Handle user transcript
-      if (message.source === 'user' && message.type === 'transcript' && message.is_final && message.text) {
-        setStatusMessage(`You said: ${message.text}`);
-        
-        const entry: TranscriptEntry = { 
-          speaker: 'user', 
-          text: message.text, 
-          timestamp: new Date() 
-        };
-        
-        // Send message to parent component for saving
-        if (onNewMessageRef.current) {
-          onNewMessageRef.current(entry);
+      // Handle user messages
+      if (message.source === 'user') {
+        // Handle both transcript format and direct message format
+        const userText = message.type === 'transcript' && message.is_final && message.text 
+          ? message.text 
+          : message.message; // Direct message format
+          
+        if (userText) {
+          setStatusMessage(`You said: ${userText}`);
+          
+          const entry: TranscriptEntry = { 
+            speaker: 'user', 
+            text: userText, 
+            timestamp: new Date() 
+          };
+          
+          // Send message to parent component for saving
+          if (onNewMessageRef.current) {
+            onNewMessageRef.current(entry);
+          }
         }
       } 
       // Handle AI response
