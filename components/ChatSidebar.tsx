@@ -156,15 +156,6 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
     <div className="h-full flex flex-col bg-[#1D1D1D] text-white">
       {/* Header with Search */}
       <div className="p-4 border-b border-[#2A2A2A]">
-        <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center">
-                {/* Placeholder for company logo/name if needed, like in the image */}
-                 <MessageSquare className="h-7 w-7 text-[#E50041] mr-2" />
-                <h1 className="text-xl font-semibold">Socrates</h1>
-            </div>
-            {/* Settings icon - can be implemented later */}
-            {/* <button className="text-gray-400 hover:text-white"><Settings size={20} /></button> */}
-        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
           <input
