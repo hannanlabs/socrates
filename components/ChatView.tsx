@@ -348,35 +348,77 @@ export function ChatView({
       doc.setFontSize(10);
       doc.setFont("helvetica", 'normal');
       
-      let contentY = bubbleY + 18; // Start Y for text content within the bubble
+      let contentY = bubbleY + bubblePadding + 8; // Initial Y for text content (after speaker/timestamp and top padding)
+      const speakerLineHeight = 8; // Approximate height taken by speaker/timestamp line
+
       for (let i = 0; i < contentLines.length; i++) {
-        if (contentY + 6 > pageHeight - 25 && i < contentLines.length) { // +6 for line height, check if it fits
+        // Check if the current line will overflow
+        if (contentY + 6 > pageHeight - (margin / 2)) { // Use a tighter bottom margin for content
           doc.addPage();
-          yPosition = 20; // Reset yPosition for the new page
-          contentY = yPosition; // Text starts at the top of the new page
-          
+          let newPageBubbleY = 20; // Bubble for continued part starts at top of content area
+          yPosition = newPageBubbleY; // Update main yPosition for context of this new page
+
+          // Draw page number on new page
           doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
           doc.setFontSize(8);
           doc.text(`Page ${doc.internal.pages.length}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-          
-          // Optionally, redraw bubble continuation styling here if desired
-          // For simplicity, we're currently not redrawing bubble borders on new pages for same message
 
+          // Calculate height of the continued message segment on this new page
+          let linesOnThisNewPage = 0;
+          const continuedIndicatorHeight = 6; // Height for "(continued)" text line
+          const continuedIndicatorPadding = 4; // Padding around "(continued)"
+          let calculatedContinuedBubbleHeight = bubblePadding; // Top bubble padding
+          calculatedContinuedBubbleHeight += continuedIndicatorHeight + continuedIndicatorPadding;
+
+          let tempTextYOnNewPage = newPageBubbleY + bubblePadding + continuedIndicatorHeight + continuedIndicatorPadding;
+
+          for (let j = i; j < contentLines.length; j++) { // Iterate over REMAINING lines
+            if (tempTextYOnNewPage + 6 > pageHeight - (margin/2) - bubblePadding) { // - bubblePadding for bottom of bubble
+              break;
+            }
+            linesOnThisNewPage++;
+            tempTextYOnNewPage += 6;
+            calculatedContinuedBubbleHeight += 6;
+          }
+          calculatedContinuedBubbleHeight += bubblePadding; // Bottom bubble padding
+          if (linesOnThisNewPage === 0) { // Ensure minimum height for "(continued)" if no other lines fit
+             calculatedContinuedBubbleHeight = bubblePadding + continuedIndicatorHeight + continuedIndicatorPadding + bubblePadding;
+          }
+
+          // Redraw bubble styling for the continued part
+          if (isUser) {
+            doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
+            doc.setLineWidth(1.5);
+            doc.line(margin, newPageBubbleY, margin, newPageBubbleY + calculatedContinuedBubbleHeight);
+            doc.setFillColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
+            doc.rect(margin + 3, newPageBubbleY, contentWidth - 3, calculatedContinuedBubbleHeight, 'F');
+          } else { // AI
+            doc.setDrawColor(colors.black[0], colors.black[1], colors.black[2]);
+            doc.setLineWidth(1.5);
+            doc.line(margin, newPageBubbleY, margin, newPageBubbleY + calculatedContinuedBubbleHeight);
+            doc.setFillColor(245, 245, 245);
+            doc.rect(margin + 3, newPageBubbleY, contentWidth - 3, calculatedContinuedBubbleHeight, 'F');
+          }
+
+          // Set contentY for drawing text within this new bubble segment
+          contentY = newPageBubbleY + bubblePadding;
           doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
           doc.setFontSize(8);
           doc.setFont("helvetica", 'italic');
-          doc.text("(continued)", margin, contentY);
-          contentY += 10;
-          
+          doc.text("(continued)", margin + bubblePadding, contentY + 5); // Position (continued) text
+          contentY += continuedIndicatorHeight + continuedIndicatorPadding; // Move contentY down
+
+          // Reset text style for actual message content
           doc.setTextColor(colors.darkGray[0], colors.darkGray[1], colors.darkGray[2]);
           doc.setFontSize(10);
           doc.setFont("helvetica", 'normal');
         }
+        
         doc.text(contentLines[i], margin + bubblePadding, contentY);
         contentY += 6;
       }
       
-      yPosition = contentY; // Update yPosition to where the text actually finished
+      yPosition = contentY + bubblePadding; // Update yPosition to after the bottom padding of the last drawn segment
 
       if (index < messages.length - 1) { // If not the last message
           const separatorAndPaddingHeight = 15; 
