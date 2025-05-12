@@ -250,13 +250,13 @@ export function ChatView({
     
     // Professional red and black color scheme
     const colors = {
-      red: [180, 0, 0],           // Deep red
-      lightRed: [220, 0, 0],      // Brighter red for accents
-      black: [0, 0, 0],           // Pure black
-      darkGray: [51, 51, 51],     // Dark gray for text
-      mediumGray: [102, 102, 102], // Medium gray for secondary text
-      lightGray: [230, 230, 230],  // Light gray for separators
-      white: [255, 255, 255]       // White
+      red: [180, 0, 0] as [number, number, number],
+      lightRed: [220, 0, 0] as [number, number, number],
+      black: [0, 0, 0] as [number, number, number],
+      darkGray: [51, 51, 51] as [number, number, number],
+      mediumGray: [102, 102, 102] as [number, number, number],
+      lightGray: [230, 230, 230] as [number, number, number],
+      white: [255, 255, 255] as [number, number, number]
     };
     
     // Metadata
@@ -264,171 +264,155 @@ export function ChatView({
     const currentTime = new Date().toLocaleTimeString();
     let yPosition = 20;
     
-    // Title section - integrated into the page (not a separate header)
-    doc.setFillColor(...colors.white);
-    doc.setTextColor(...colors.black);
+    // Title section
+    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.setTextColor(colors.black[0], colors.black[1], colors.black[2]);
     doc.setFontSize(16);
     doc.setFont("helvetica", 'bold');
     doc.text(chatTitle, margin, yPosition);
     
-    // Add subtle red underline beneath title
     yPosition += 3;
-    doc.setDrawColor(...colors.red);
+    doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
     doc.setLineWidth(0.5);
     doc.line(margin, yPosition, margin + doc.getTextWidth(chatTitle), yPosition);
     
-    // Export date in smaller text
     yPosition += 7;
-    doc.setTextColor(...colors.mediumGray);
+    doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
     doc.setFontSize(9);
     doc.setFont("helvetica", 'normal');
     doc.text(`Exported on ${currentDate} at ${currentTime}`, margin, yPosition);
     
-    // Add space after header section
     yPosition += 15;
     
-    // Process messages with professional styling
     messages.forEach((message, index) => {
       const isUser = message.role === "user";
       const speaker = isUser ? "You" : "AI Assistant";
       
-      // Check if we need a new page
-      if (yPosition > pageHeight - 40) {
+      if (yPosition > pageHeight - 40) { // Check if new message section needs new page
         doc.addPage();
         yPosition = 20;
-        
-        // Add subtle page number at the bottom of each page
-        doc.setTextColor(...colors.mediumGray);
+        doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
         doc.setFontSize(8);
-        doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        doc.text(`Page ${doc.internal.pages.length}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
       }
       
-      // Message section
       const bubbleY = yPosition;
       const bubblePadding = 10;
       
-      // Calculate message height
       doc.setFontSize(10);
       const contentLines = doc.splitTextToSize(message.content, contentWidth - (bubblePadding * 2));
-      const messageHeight = (contentLines.length * 6) + 20; // Height for content + speaker + padding
-      
-      // Draw message section with clean styling
+      // This messageHeight is for the current page's bubble segment.
+      // For multi-page text, the actual drawn content will dictate the final yPosition.
+      let currentSegmentLineCount = 0;
+      let tempY = bubbleY + 18; // Initial text position within bubble
+      for(let line of contentLines) {
+        if (tempY + 6 > pageHeight - 25) { // Approximate check if line fits
+            break; 
+        }
+        currentSegmentLineCount++;
+        tempY +=6;
+      }
+      const bubbleSegmentHeight = (currentSegmentLineCount * 6) + 20;
+
+
       if (isUser) {
-        // User message styling - subtle red left border
-        doc.setDrawColor(...colors.red);
+        doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
         doc.setLineWidth(1.5);
-        doc.line(margin, bubbleY, margin, bubbleY + messageHeight);
-        
-        // Light gray background
-        doc.setFillColor(...colors.lightGray);
-        doc.rect(margin + 3, bubbleY, contentWidth - 3, messageHeight, 'F');
-        
-        // Add speaker name
-        doc.setTextColor(...colors.red);
+        doc.line(margin, bubbleY, margin, bubbleY + bubbleSegmentHeight);
+        doc.setFillColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
+        doc.rect(margin + 3, bubbleY, contentWidth - 3, bubbleSegmentHeight, 'F');
+        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
         doc.setFontSize(10);
         doc.setFont("helvetica", 'bold');
         doc.text(speaker, margin + bubblePadding, bubbleY + 8);
       } else {
-        // AI message styling - subtle black left border
-        doc.setDrawColor(...colors.black);
+        doc.setDrawColor(colors.black[0], colors.black[1], colors.black[2]);
         doc.setLineWidth(1.5);
-        doc.line(margin, bubbleY, margin, bubbleY + messageHeight);
-        
-        // Very light gray background
+        doc.line(margin, bubbleY, margin, bubbleY + bubbleSegmentHeight);
         doc.setFillColor(245, 245, 245);
-        doc.rect(margin + 3, bubbleY, contentWidth - 3, messageHeight, 'F');
-        
-        // Add speaker name
-        doc.setTextColor(...colors.black);
+        doc.rect(margin + 3, bubbleY, contentWidth - 3, bubbleSegmentHeight, 'F');
+        doc.setTextColor(colors.black[0], colors.black[1], colors.black[2]);
         doc.setFontSize(10);
         doc.setFont("helvetica", 'bold');
         doc.text(speaker, margin + bubblePadding, bubbleY + 8);
       }
       
-      // Add timestamp if available
-      if (message.timestamp) {
-        const timestamp = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (message.created_at) { // Use created_at for timestamp
+        const timestamp = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         doc.setFontSize(8);
-        doc.setTextColor(...colors.mediumGray);
+        doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
         doc.text(timestamp, pageWidth - margin - bubblePadding, bubbleY + 8, { align: 'right' });
       }
       
-      // Add message content with proper styling
-      doc.setTextColor(...colors.darkGray);
+      doc.setTextColor(colors.darkGray[0], colors.darkGray[1], colors.darkGray[2]);
       doc.setFontSize(10);
       doc.setFont("helvetica", 'normal');
       
-      // Handle content that might span multiple pages
-      let contentY = bubbleY + 18;
+      let contentY = bubbleY + 18; // Start Y for text content within the bubble
       for (let i = 0; i < contentLines.length; i++) {
-        if (contentY > pageHeight - 25) {
+        if (contentY + 6 > pageHeight - 25 && i < contentLines.length) { // +6 for line height, check if it fits
           doc.addPage();
+          yPosition = 20; // Reset yPosition for the new page
+          contentY = yPosition; // Text starts at the top of the new page
           
-          // Add page number
-          doc.setTextColor(...colors.mediumGray);
+          doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
           doc.setFontSize(8);
-          doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+          doc.text(`Page ${doc.internal.pages.length}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
           
-          // Reset position for new page
-          contentY = 20;
-          
-          // Add continuation note
-          doc.setTextColor(...colors.mediumGray);
+          // Optionally, redraw bubble continuation styling here if desired
+          // For simplicity, we're currently not redrawing bubble borders on new pages for same message
+
+          doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
           doc.setFontSize(8);
           doc.setFont("helvetica", 'italic');
           doc.text("(continued)", margin, contentY);
           contentY += 10;
           
-          // Reset text style for content
-          doc.setTextColor(...colors.darkGray);
+          doc.setTextColor(colors.darkGray[0], colors.darkGray[1], colors.darkGray[2]);
           doc.setFontSize(10);
           doc.setFont("helvetica", 'normal');
         }
-        
-        // Ensure text is properly aligned
         doc.text(contentLines[i], margin + bubblePadding, contentY);
         contentY += 6;
       }
       
-      // Update yPosition for next message
-      yPosition = bubbleY + messageHeight + 15;
-      
-      // Add separator between messages (except for the last message)
-      if (index < messages.length - 1) {
-        // Check if we have space for the separator
-        if (yPosition + 5 > pageHeight - 25) {
-          doc.addPage();
-          yPosition = 20;
-          
-          // Add page number
-          doc.setTextColor(...colors.mediumGray);
-          doc.setFontSize(8);
-          doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-        } else {
-          // Add simple, professional separator
-          doc.setDrawColor(...colors.lightGray);
-          doc.setLineWidth(0.5);
-          doc.line(margin + 10, yPosition - 7, pageWidth - margin - 10, yPosition - 7);
-        }
+      yPosition = contentY; // Update yPosition to where the text actually finished
+
+      if (index < messages.length - 1) { // If not the last message
+          const separatorAndPaddingHeight = 15; 
+          if (yPosition + separatorAndPaddingHeight > pageHeight - 25) {
+              doc.addPage();
+              yPosition = 20; 
+              doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
+              doc.setFontSize(8);
+              doc.text(`Page ${doc.internal.pages.length}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+          } else {
+              const separatorY = yPosition + 7; 
+              doc.setDrawColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
+              doc.setLineWidth(0.5);
+              doc.line(margin + 10, separatorY, pageWidth - margin - 10, separatorY);
+              yPosition += separatorAndPaddingHeight; 
+          }
       }
     });
     
-    // Add final page number if not already added
-    doc.setTextColor(...colors.mediumGray);
-    doc.setFontSize(8);
-    doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-    
-    // Add subtle footer with document info
-    doc.setDrawColor(...colors.lightGray);
+    // Add final page number if not already on a fresh page
+    if (pageHeight - yPosition < 20 && doc.internal.pages.length > 0) {
+    } else if (doc.internal.pages.length > 0) { 
+        doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
+        doc.setFontSize(8);
+        doc.text(`Page ${doc.internal.pages.length}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+
+    doc.setDrawColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
     doc.setLineWidth(0.5);
-    doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+    doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15); // Footer line
     
-    doc.setTextColor(...colors.mediumGray);
+    doc.setTextColor(colors.mediumGray[0], colors.mediumGray[1], colors.mediumGray[2]);
     doc.setFontSize(8);
     doc.setFont("helvetica", 'normal');
-    doc.text("Conversation Export", margin, pageHeight - 10);
+    doc.text("Conversation Export", margin, pageHeight - 10); // Footer text
     
-    // Save the PDF with a clean filename
     const safeFileName = chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     doc.save(`${safeFileName}.pdf`);
     setShowExportMenu(false);
