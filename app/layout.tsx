@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/supabase/auth-context"
 import Script from "next/script"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -35,6 +36,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>{children}</AuthProvider>
+        <Toaster />
         
         {/* ElevenLabs Conversational AI Script */}
         <Script 

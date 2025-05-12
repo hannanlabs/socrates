@@ -545,8 +545,12 @@ export function ChatView({
 
       <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
         {documentProcessingError && (
-          <div className="mb-2 p-2.5 bg-red-700 bg-opacity-30 text-red-300 border border-red-700 rounded-md text-xs text-center">
-            Error: {documentProcessingError}
+          <div className={`mb-2 p-2.5 rounded-md text-xs text-center ${
+            documentProcessingError.startsWith('✅') 
+              ? 'bg-green-700 bg-opacity-30 text-green-300 border border-green-700' 
+              : 'bg-red-700 bg-opacity-30 text-red-300 border border-red-700'
+          }`}>
+            {documentProcessingError}
           </div>
         )}
         {selectedFile && (

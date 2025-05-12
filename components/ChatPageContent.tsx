@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ChatSidebar } from "@/components/ChatSidebar"
 import { ChatView } from "@/components/ChatView"
 import { User } from "@supabase/supabase-js"
+import { toast } from "@/components/ui/use-toast"
 // No UploadCloud import here, it will be in ChatView if needed
 
 interface ChatPageContentProps {
@@ -132,7 +133,26 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
       }
 
       console.log("Document processed successfully by backend:", result);
-      alert(`Document "${selectedFile.name}" processed successfully! Agent KB updated. New Document ID: ${result.newDocumentId}`);
+      
+      // Show success message with toast
+      try {
+        toast({
+          title: "Document Processed Successfully",
+          description: `"${selectedFile.name}" has been added to the agent's knowledge base.`,
+          variant: "default",
+          duration: 5000, // Show for 5 seconds
+        });
+      } catch (toastError) {
+        console.error("Error showing toast:", toastError);
+      }
+      
+      // Set a temporary success message in the documentError state with positive styling
+      setDocumentError(`✅ Document "${selectedFile.name}" processed successfully!`);
+      
+      // Clear the success message after 5 seconds
+      setTimeout(() => {
+        setDocumentError(null);
+      }, 5000);
       
       // Option 1: Start a new chat for this document
       // This ensures a clean slate and context for the agent.
