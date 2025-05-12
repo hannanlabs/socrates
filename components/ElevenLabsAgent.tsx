@@ -250,12 +250,12 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded">
+        <div className="flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded min-w-0 flex-shrink">
           <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span>{currentDisplayStatus}</span>
+          <span className="truncate">{currentDisplayStatus}</span>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button 
             className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} flex items-center justify-center`}
             onClick={togglePause}
@@ -286,8 +286,10 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
       </div>
 
       {statusMessage && currentDisplayStatus !== statusMessage && (
-        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 truncate">
-          {statusMessage}
+        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 overflow-hidden">
+          <p className="break-words whitespace-normal">
+            {statusMessage}
+          </p>
         </div>
       )}
     </div>
