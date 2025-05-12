@@ -146,41 +146,15 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
         console.error("Error showing toast:", toastError);
       }
       
-      // Set a temporary success message in the documentError state with positive styling
       setDocumentError(`✅ Document "${selectedFile.name}" processed successfully!`);
       
-      // Clear the success message after 5 seconds
       setTimeout(() => {
         setDocumentError(null);
-      }, 5000);
+      }, 2000);
       
-      // Option 1: Start a new chat for this document
-      // This ensures a clean slate and context for the agent.
-      // You might want to generate a title for this new chat based on the document name.
-      // const newChatTitle = `Chat about ${selectedFile.name}`.substring(0, 50); // Example title
-      // const newChat = await createNewChatInDb(user.id, newChatTitle); // You'd need this function
-      // if (newChat && newChat.id) {
-      //   setSelectedChatId(newChat.id);
-      //   router.push(`/?id=${newChat.id}`, { scroll: false });
-      // }
-
-      // Option 2: Re-key the current ChatView if staying in the same chat ID context
-      // This is simpler if you don't want to create a new DB entry for each doc chat, but ensure agent context is fresh.
-      // If selectedChatId is null (e.g. user uploaded doc before starting any chat from sidebar)
-      // we might need to initialize a new chat here.
       if (!selectedChatId) {
-         // Forcing a new chat state if none selected. Ideally, create a chat in DB.
-         // This is a placeholder for proper new chat creation logic.
-         // const tempNewChatId = "doc-chat-" + Date.now();
-         // setSelectedChatId(tempNewChatId);
-         // router.push(`/?id=${tempNewChatId}`, { scroll: false });
-         // For now, we can just call handleNewChat and the user can click into it again
-         // or we rely on the chat view updating if it was already visible.
-         // The key part is the agent's knowledge base *is* updated.
          console.log("Document processed. Agent KB updated. Consider starting a new chat or refreshing context.")
       }
-      // If an existing chat is selected, its context with the agent will now use the new document.
-      // The existing messages in ChatView remain, but new interactions use the new KB.
 
       setSelectedFile(null); // Clear the file after successful processing
 
