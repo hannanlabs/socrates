@@ -11,9 +11,11 @@ type SettingsTab = "account" | "billing"
 
 export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("account")
-  const { user, signOut, updateUserAgentId } = useAuth()
+  const { user, signOut, updateUserAgentId, updateUserElevenLabsApiKey } = useAuth()
   const [agentIdInput, setAgentIdInput] = useState("")
+  const [elevenLabsApiKeyInput, setElevenLabsApiKeyInput] = useState("")
   const [saveStatus, setSaveStatus] = useState<string | null>(null)
+  const [saveApiKeyStatus, setSaveApiKeyStatus] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -21,6 +23,11 @@ export function Settings() {
       setAgentIdInput(user.user_metadata.elevenlabs_agent_id as string)
     } else {
       setAgentIdInput("")
+    }
+    if (user?.user_metadata?.elevenlabs_api_key) {
+      setElevenLabsApiKeyInput(user.user_metadata.elevenlabs_api_key as string)
+    } else {
+      setElevenLabsApiKeyInput("")
     }
   }, [user])
 
@@ -44,6 +51,21 @@ export function Settings() {
     } catch (error: any) {
       console.error("Error saving Agent ID:", error)
       setSaveStatus(`Error: ${error.message || "Could not save Agent ID."}`)
+    }
+  }
+
+  const handleSaveApiKey = async () => {
+    setSaveApiKeyStatus(null)
+    if (!updateUserElevenLabsApiKey) {
+      setSaveApiKeyStatus("Error: Update function not available.")
+      return
+    }
+    try {
+      await updateUserElevenLabsApiKey(elevenLabsApiKeyInput)
+      setSaveApiKeyStatus("API Key saved successfully!")
+    } catch (error: any) {
+      console.error("Error saving API Key:", error)
+      setSaveApiKeyStatus(`Error: ${error.message || "Could not save API Key."}`)
     }
   }
 
@@ -119,6 +141,33 @@ export function Settings() {
                   {saveStatus && (
                     <p className={`mt-2 text-sm ${saveStatus.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
                       {saveStatus}
+                    </p>
+                  )}
+                </div>
+
+                <div className="border-t border-gray-700 pt-6">
+                  <h3 className="text-gray-200 font-medium mb-2">ElevenLabs API Key</h3>
+                  <p className="text-sm text-gray-400 mb-3">
+                    Enter your ElevenLabs API Key. This will be stored securely.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="password"
+                      placeholder="Enter your ElevenLabs API Key"
+                      value={elevenLabsApiKeyInput}
+                      onChange={(e) => setElevenLabsApiKeyInput(e.target.value)}
+                      className="max-w-sm bg-[#111111] border-gray-600 text-white placeholder-gray-500"
+                    />
+                    <Button
+                      onClick={handleSaveApiKey}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Save API Key
+                    </Button>
+                  </div>
+                  {saveApiKeyStatus && (
+                    <p className={`mt-2 text-sm ${saveApiKeyStatus.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
+                      {saveApiKeyStatus}
                     </p>
                   )}
                 </div>
