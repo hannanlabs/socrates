@@ -4,30 +4,33 @@ import { ElevenLabsClient } from 'elevenlabs';
 // If you get an error for Blob, you might need to explicitly import it or ensure your Node version is >= 18
 // For older Node or specific environments, you might need: import { Blob } from 'buffer';
 
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-
-// !!! IMPORTANT: Replace with your actual Agent ID from ElevenLabs for testing !!!
-const HARDCODED_AGENT_ID = "UvPz3Vgu9O6iI0KDWJDT"; 
-
 export async function POST(req: NextRequest) {
-  if (!ELEVENLABS_API_KEY) {
-    console.error('ElevenLabs API key not configured.');
-    return NextResponse.json({ error: 'Server configuration error: ElevenLabs API key missing.' }, { status: 500 });
-  }
-
-  const agentId = HARDCODED_AGENT_ID;
-  const elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
-  
   let newUploadedDocumentId: string | undefined = undefined;
   let newUploadedDocumentName: string | undefined = undefined;
-
+  let elevenlabs: ElevenLabsClient | undefined = undefined;
+  
   try {
+    // Get form data
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    const ELEVENLABS_API_KEY = formData.get('apiKey') as string | null;
+    const agentId = formData.get('agentId') as string | null;
+    
+    // Validate inputs
     if (!file) {
       return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
     }
     
+    if (!ELEVENLABS_API_KEY) {
+      return NextResponse.json({ error: 'ElevenLabs API key missing.' }, { status: 400 });
+    }
+    
+    if (!agentId) {
+      return NextResponse.json({ error: 'ElevenLabs Agent ID missing.' }, { status: 400 });
+    }
+    
+    elevenlabs = new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY });
+
     console.log(`Uploading file "${file.name}" to create a new knowledge base document.`);
     newUploadedDocumentName = file.name;
     const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -87,7 +90,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Error during ElevenLabs API interaction:', error);
-    if (newUploadedDocumentId) {
+    if (newUploadedDocumentId && elevenlabs) {
         try {
             console.warn(`Attempting to cleanup newly uploaded document ${newUploadedDocumentId} from Knowledge Base due to error: ${error.message}`);
             await elevenlabs.conversationalAi.deleteKnowledgeBaseDocument(newUploadedDocumentId);

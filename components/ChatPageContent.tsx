@@ -103,8 +103,20 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     setDocumentError(null);
     console.log("Processing document for conversation:", selectedFile.name);
 
+    // Get API key and Agent ID from user metadata
+    const elevenLabsApiKey = user?.user_metadata?.elevenlabs_api_key;
+    const elevenLabsAgentId = user?.user_metadata?.elevenlabs_agent_id;
+
+    if (!elevenLabsApiKey || !elevenLabsAgentId) {
+      setDocumentError("Missing API key or Agent ID. Please add them in Settings.");
+      setIsProcessingDocument(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', selectedFile);
+    formData.append('apiKey', elevenLabsApiKey);
+    formData.append('agentId', elevenLabsAgentId);
 
     try {
       const response = await fetch('/api/agent/set-document', {
