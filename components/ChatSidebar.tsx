@@ -14,9 +14,10 @@ interface ChatSidebarProps {
   selectedChatId: string | null;
   onSelectChat: (chatId: string | null) => void;
   onNewChat: () => void; // Callback to inform parent about new chat initiation
+  onChatTitleUpdated: (chatId: string, newTitle: string) => void; // New callback
 }
 
-export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSidebarProps) {
+export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTitleUpdated }: ChatSidebarProps) {
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,7 +104,9 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat }: ChatSid
       try {
         const success = await updateChatTitle(chatId, editedTitle.trim());
         if (success) {
-          setChats(chats.map(c => c.id === chatId ? { ...c, title: editedTitle.trim(), updated_at: new Date().toISOString() } : c).sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+          const newTitle = editedTitle.trim();
+          setChats(chats.map(c => c.id === chatId ? { ...c, title: newTitle, updated_at: new Date().toISOString() } : c).sort((a,b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()));
+          onChatTitleUpdated(chatId, newTitle); // Call the new callback
         }
       } catch (error) {
         console.error("Error updating chat title:", error);

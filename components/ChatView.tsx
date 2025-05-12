@@ -23,6 +23,7 @@ type Message = {
 interface ChatViewProps {
   chatId: string;
   user: User;
+  initialTitle: string | null;
   initiateDocumentUpload: () => void;
   onDocumentReadyToProcess: () => Promise<void>;
   selectedFile: File | null;
@@ -114,6 +115,7 @@ const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
 export function ChatView({ 
   chatId, 
   user: propUser,
+  initialTitle,
   initiateDocumentUpload,
   onDocumentReadyToProcess,
   selectedFile,
@@ -127,7 +129,7 @@ export function ChatView({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [chatTitle, setChatTitle] = useState("Conversation");
+  const [chatTitle, setChatTitle] = useState(initialTitle || "Conversation");
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -159,9 +161,13 @@ export function ChatView({
 
     const fetchChatData = async () => {
       try {
-        const chatDetails = await getChatById(chatId);
-        if (isActive && chatDetails) {
-          setChatTitle(chatDetails.title);
+        if (!initialTitle) { 
+          const chatDetails = await getChatById(chatId);
+          if (isActive && chatDetails) {
+            setChatTitle(chatDetails.title);
+          }
+        } else if (chatTitle !== initialTitle) {
+          setChatTitle(initialTitle);
         }
 
         const messagesData = await getChatMessages(chatId);
@@ -185,7 +191,7 @@ export function ChatView({
     return () => {
       isActive = false;
     };
-  }, [chatId, user]);
+  }, [chatId, user, initialTitle, chatTitle]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -6,6 +6,7 @@ import { ChatSidebar } from "@/components/ChatSidebar"
 import { ChatView } from "@/components/ChatView"
 import { User } from "@supabase/supabase-js"
 import { toast } from "@/components/ui/use-toast"
+import { getChatById } from "@/lib/supabase/chat-service"
 // No UploadCloud import here, it will be in ChatView if needed
 
 interface ChatPageContentProps {
@@ -20,6 +21,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   const initialChatId = searchParams.get("id")
   const [selectedChatId, setSelectedChatId] = useState<string | null>(initialChatId)
   const [isNavigating, setIsNavigating] = useState(false)
+  const [currentChatTitle, setCurrentChatTitle] = useState<string | null>(null);
 
   // State and Ref for document upload
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -53,16 +55,33 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     if (currentIdInUrl !== selectedChatId) {
       setSelectedChatId(currentIdInUrl)
     }
-  }, [searchParams])
+    // Fetch title when selectedChatId changes
+    if (currentIdInUrl) {
+      getChatById(currentIdInUrl).then(chat => {
+        if (chat) setCurrentChatTitle(chat.title);
+      });
+    } else {
+      setCurrentChatTitle(null);
+    }
+  }, [searchParams, selectedChatId])
 
   const handleSelectChat = (chatId: string | null) => {
     setSelectedChatId(chatId)
     setSelectedFile(null);
     setDocumentError(null); // Clear document error when chat changes
+    // Fetch and set title when a chat is selected
+    if (chatId) {
+      getChatById(chatId).then(chat => {
+        if (chat) setCurrentChatTitle(chat.title);
+      });
+    } else {
+      setCurrentChatTitle(null);
+    }
   }
 
   const handleNewChat = () => {
     setSelectedChatId(null)
+    setCurrentChatTitle("New Conversation"); // Set a default title for new chat UX
     setSelectedFile(null);
     setDocumentError(null); // Clear document error for new chat
     if (searchParams.get("id")) {
@@ -171,6 +190,15 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     setDocumentError(null);
   }
 
+  // New callback handler for title updates from sidebar
+  const handleChatTitleUpdated = (updatedChatId: string, newTitle: string) => {
+    if (selectedChatId === updatedChatId) {
+      setCurrentChatTitle(newTitle);
+    }
+    // We might also want to update the title in a local list of chats if ChatPageContent maintains one,
+    // but for now, just updating the currently viewed chat's title is the priority.
+  };
+
   return (
     <div className="flex h-screen bg-[#171717] text-white overflow-hidden">
       {/* Hidden File Input */}
@@ -188,6 +216,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
           selectedChatId={selectedChatId} 
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat} 
+          onChatTitleUpdated={handleChatTitleUpdated}
         />
       </div>
 
@@ -196,14 +225,14 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
         {selectedChatId ? (
           <ChatView 
             chatId={selectedChatId} 
-            key={selectedChatId} // Re-mounts ChatView when chatId changes
-            user={user} // Pass user prop
+            initialTitle={currentChatTitle}
+            user={user}
             initiateDocumentUpload={initiateDocumentUploadProcess}
             onDocumentReadyToProcess={handleStartConversationWithDocument}
             selectedFile={selectedFile}
-            clearSelectedFile={clearSelectedFileAndError} // Updated to clear error too
-            isProcessingDocument={isProcessingDocument} // Pass loading state
-            documentProcessingError={documentError} // Pass error state
+            clearSelectedFile={clearSelectedFileAndError}
+            isProcessingDocument={isProcessingDocument}
+            documentProcessingError={documentError}
           />
         ) : (
           // Welcome screen when no chat is selected
