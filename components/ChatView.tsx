@@ -233,24 +233,6 @@ export function ChatView({
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const exportToTxt = () => {
-    let content = `${chatTitle}\n\n`;
-    messages.forEach(message => {
-      const speaker = message.role === "user" ? "You" : "AI Assistant";
-      content += `${speaker}:\n${message.content}\n\n`;
-    });
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setShowExportMenu(false);
-  };
-
   const exportToPdf = () => {
     // Initialize PDF with professional settings
     const doc = new jsPDF({
@@ -452,27 +434,6 @@ export function ChatView({
     setShowExportMenu(false);
   };
     
-  const exportToDocx = async () => {
-    const docParagraphs: Paragraph[] = [];
-    docParagraphs.push(new Paragraph({ text: chatTitle, heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }));
-    messages.forEach(message => {
-      const speaker = message.role === "user" ? "You" : "AI Assistant";
-      docParagraphs.push(new Paragraph({ children: [new TextRun({ text: `${speaker}:`, bold: true })] }));
-      docParagraphs.push(new Paragraph({ text: message.content, spacing: { after: 200 } }));
-    });
-    const doc = new Document({ sections: [{ children: docParagraphs }] });
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.docx`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setShowExportMenu(false);
-  };
-
   const handlePauseStateChange = useCallback((paused: boolean) => {
     setIsPaused(paused);
   }, []);
@@ -511,9 +472,7 @@ export function ChatView({
           </button>
           {showExportMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-[#2A2A2A] border border-[#333333] rounded-md shadow-xl z-20 py-1">
-              {[{ label: "PDF (.pdf)", action: exportToPdf },
-                { label: "Word (.docx)", action: exportToDocx },
-                { label: "Text File (.txt)", action: exportToTxt },
+              {[{ label: "PDF (.pdf)", action: exportToPdf}
               ].map(item => (
                 <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-gray-200 hover:bg-[#383838] transition-colors">
                   {item.label}
