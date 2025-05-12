@@ -133,6 +133,44 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
 
   const { status: sdkStatus, isSpeaking } = elevenLabsConversation;
 
+  // Determine the terse status for the primary display (truncated)
+  let terseCalculatedStatus: string;
+  if (isPaused) {
+    terseCalculatedStatus = 'Paused';
+  } else if (isConnecting) {
+    terseCalculatedStatus = 'Connecting...';
+  } else if (isSpeaking) {
+    terseCalculatedStatus = 'AI Speaking';
+  } else {
+    // If not in a specific active state, rely on sdkStatus or a default
+    switch (sdkStatus) {
+      case 'connected':
+        terseCalculatedStatus = 'Listening...';
+        break;
+      case 'disconnected':
+        // If statusMessage indicates an error, terse status should be 'Error'
+        if (statusMessage && statusMessage.toLowerCase().startsWith("error")) {
+          terseCalculatedStatus = 'Error';
+        } else {
+          terseCalculatedStatus = 'Disconnected';
+        }
+        break;
+      case 'connecting': // SDK might also report 'connecting'
+        terseCalculatedStatus = 'Connecting...';
+        break;
+      default:
+        // Fallback: Use statusMessage if it's short and not a transcript/error, otherwise sdkStatus or 'Idle'
+        // Check if statusMessage itself implies an error that wasn't caught by sdkStatus being 'disconnected' while statusMessage starts with error
+        if (statusMessage && statusMessage.toLowerCase().startsWith("error")) {
+          terseCalculatedStatus = 'Error';
+        } else if (statusMessage && !statusMessage.startsWith("You said:") && !statusMessage.startsWith("AI:") && statusMessage.length < 30) {
+          terseCalculatedStatus = statusMessage;
+        } else {
+          terseCalculatedStatus = sdkStatus || 'Idle'; // Display raw sdkStatus (if any) or "Idle"
+        }
+    }
+  }
+
   useEffect(() => {
     if (onSpeakingStatusChange) {
       onSpeakingStatusChange(isSpeaking);
@@ -243,16 +281,17 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
     }
   };
   
-  const currentDisplayStatus = isPaused ? 'Paused' : 
-                               isConnecting ? 'Connecting...' : 
-                               isSpeaking ? 'AI Speaking' : statusMessage || sdkStatus;
+  // const currentDisplayStatus = isPaused ? 'Paused' : 
+  //                              isConnecting ? 'Connecting...' : 
+  //                              isSpeaking ? 'AI Speaking' : statusMessage || sdkStatus;
+  // The above is replaced by terseCalculatedStatus for the main display
 
   return (
     <div className="w-full flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded min-w-0 flex-shrink">
           <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span className="truncate">{currentDisplayStatus}</span>
+          <span className="truncate">{terseCalculatedStatus}</span>
         </div>
         
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -285,9 +324,11 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
         </div>
       </div>
 
-      {statusMessage && currentDisplayStatus !== statusMessage && (
-        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 overflow-hidden">
-          <p className="break-words whitespace-normal">
+      {/* Dedicated container for long status messages/transcriptions (statusMessage from state) */}
+      {/* Show if statusMessage exists and is different from the terseCalculatedStatus to avoid redundancy */}
+      {statusMessage && statusMessage !== terseCalculatedStatus && (
+        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 overflow-hidden"> 
+          <p className="break-words whitespace-normal"> 
             {statusMessage}
           </p>
         </div>
