@@ -133,7 +133,7 @@ export function Settings() {
                     />
                     <Button
                       onClick={handleSaveAgentId}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       Save Agent ID
                     </Button>
@@ -160,7 +160,7 @@ export function Settings() {
                     />
                     <Button
                       onClick={handleSaveApiKey}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       Save API Key
                     </Button>
