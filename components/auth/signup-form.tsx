@@ -26,42 +26,36 @@ export function SignupForm() {
       // Clear previous state
       setSubmittedEmail("")
       
-      console.log("Checking if user exists:", email);
-      // First check if the user already exists
-      const userExists = await checkIfUserExists(email);
-      console.log("User exists check result:", userExists);
-      
-      if (userExists) {
-        console.log("User already exists, preventing signup");
-        setError("An account with this email already exists. Please sign in instead.");
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("User doesn't exist, proceeding with signup");
-      // If user doesn't exist, proceed with signup
+      console.log("Proceeding directly with signup attempt")
+      // Proceed directly with signup
       setSubmittedEmail(email)
       await signUp(email, password, name)
       
-      console.log("Signup completed successfully");
+      console.log("Signup completed successfully")
       setSignupComplete(true)
       setName("")
       setEmail("")
       setPassword("")
     } catch (err: any) {
-      // More specific error handling
+      // More specific error handling directly from the signUp call
       console.error("Signup error:", err)
       
-      // Additional check for user already exists in catch block
-      if (err.message?.includes("already registered") || 
-          err.message?.includes("already been registered")) {
-        setError("An account with this email already exists. Please sign in instead.");
-      } else if (err.message?.includes("Invalid email")) {
+      const errorMessage = err.message?.toLowerCase() || ""
+
+      if (errorMessage.includes("user already registered") || 
+          errorMessage.includes("already been registered") ||
+          errorMessage.includes("email link signup timed out") || // Might indicate prior attempt
+          errorMessage.includes("already exists")) {
+        setError("An account with this email already exists. Please sign in instead.")
+      } else if (errorMessage.includes("invalid email") || errorMessage.includes("valid email")) {
         setError("Please enter a valid email address.")
-      } else if (err.message?.includes("Password")) {
-        setError("Password doesn't meet requirements. It should be at least 6 characters.")
+      } else if (errorMessage.includes("password")) { // Check for password requirements
+        // You might want to parse the specific requirement from the error if Supabase provides it
+        setError("Password doesn't meet requirements (e.g., minimum length).") 
+      } else if (errorMessage.includes("rate limit") || errorMessage.includes("security purposes")) {
+         setError("Too many attempts. Please wait a minute and try again.") // Handle rate limit specifically
       } else {
-        setError("Error creating account. Please try again.")
+        setError("Error creating account. Please try again.") // Generic error
       }
     } finally {
       setIsLoading(false)
