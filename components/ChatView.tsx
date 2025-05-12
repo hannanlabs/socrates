@@ -264,11 +264,11 @@ export function ChatView({
     const margin = 20;
     const contentWidth = pageWidth - (margin * 2);
     
-    // Professional red and black color scheme
+    // Professional blue and white color scheme
     const colors = {
-      red: [180, 0, 0] as [number, number, number],
-      lightRed: [220, 0, 0] as [number, number, number],
-      black: [0, 0, 0] as [number, number, number],
+      blue: [59, 130, 246] as [number, number, number], // Matches primary blue (approximately)
+      lightBlue: [96, 165, 250] as [number, number, number],
+      darkBlue: [30, 64, 175] as [number, number, number],
       darkGray: [51, 51, 51] as [number, number, number],
       mediumGray: [102, 102, 102] as [number, number, number],
       lightGray: [230, 230, 230] as [number, number, number],
@@ -282,13 +282,13 @@ export function ChatView({
     
     // Title section
     doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
-    doc.setTextColor(colors.black[0], colors.black[1], colors.black[2]);
+    doc.setTextColor(colors.darkBlue[0], colors.darkBlue[1], colors.darkBlue[2]);
     doc.setFontSize(16);
     doc.setFont("helvetica", 'bold');
     doc.text(chatTitle, margin, yPosition);
     
     yPosition += 3;
-    doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
+    doc.setDrawColor(colors.blue[0], colors.blue[1], colors.blue[2]);
     doc.setLineWidth(0.5);
     doc.line(margin, yPosition, margin + doc.getTextWidth(chatTitle), yPosition);
     
@@ -332,22 +332,22 @@ export function ChatView({
 
 
       if (isUser) {
-        doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.setDrawColor(colors.blue[0], colors.blue[1], colors.blue[2]);
         doc.setLineWidth(1.5);
         doc.line(margin, bubbleY, margin, bubbleY + bubbleSegmentHeight);
         doc.setFillColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
         doc.rect(margin + 3, bubbleY, contentWidth - 3, bubbleSegmentHeight, 'F');
-        doc.setTextColor(colors.red[0], colors.red[1], colors.red[2]);
+        doc.setTextColor(colors.blue[0], colors.blue[1], colors.blue[2]);
         doc.setFontSize(10);
         doc.setFont("helvetica", 'bold');
         doc.text(speaker, margin + bubblePadding, bubbleY + 8);
       } else {
-        doc.setDrawColor(colors.black[0], colors.black[1], colors.black[2]);
+        doc.setDrawColor(colors.darkBlue[0], colors.darkBlue[1], colors.darkBlue[2]);
         doc.setLineWidth(1.5);
         doc.line(margin, bubbleY, margin, bubbleY + bubbleSegmentHeight);
         doc.setFillColor(245, 245, 245);
         doc.rect(margin + 3, bubbleY, contentWidth - 3, bubbleSegmentHeight, 'F');
-        doc.setTextColor(colors.black[0], colors.black[1], colors.black[2]);
+        doc.setTextColor(colors.darkBlue[0], colors.darkBlue[1], colors.darkBlue[2]);
         doc.setFontSize(10);
         doc.setFont("helvetica", 'bold');
         doc.text(speaker, margin + bubblePadding, bubbleY + 8);
@@ -403,13 +403,13 @@ export function ChatView({
 
           // Redraw bubble styling for the continued part
           if (isUser) {
-            doc.setDrawColor(colors.red[0], colors.red[1], colors.red[2]);
+            doc.setDrawColor(colors.blue[0], colors.blue[1], colors.blue[2]);
             doc.setLineWidth(1.5);
             doc.line(margin, newPageBubbleY, margin, newPageBubbleY + calculatedContinuedBubbleHeight);
             doc.setFillColor(colors.lightGray[0], colors.lightGray[1], colors.lightGray[2]);
             doc.rect(margin + 3, newPageBubbleY, contentWidth - 3, calculatedContinuedBubbleHeight, 'F');
           } else { // AI
-            doc.setDrawColor(colors.black[0], colors.black[1], colors.black[2]);
+            doc.setDrawColor(colors.darkBlue[0], colors.darkBlue[1], colors.darkBlue[2]);
             doc.setLineWidth(1.5);
             doc.line(margin, newPageBubbleY, margin, newPageBubbleY + calculatedContinuedBubbleHeight);
             doc.setFillColor(245, 245, 245);
