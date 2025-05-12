@@ -252,38 +252,206 @@ export function ChatView({
   };
 
   const exportToPdf = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 15;
-    const textWidth = pageWidth - (margin * 2);
-    let yPosition = 20;
-    
-    doc.setFontSize(16);
-    doc.text(chatTitle, margin, yPosition);
-    yPosition += 15;
-    
-    doc.setFontSize(11);
-    messages.forEach(message => {
-      const speaker = message.role === "user" ? "You" : "AI Assistant";
-      doc.setFont("helvetica", 'bold');
-      const speakerText = `${speaker}:`;
-      const speakerLines = doc.splitTextToSize(speakerText, textWidth);
-      if (yPosition + (speakerLines.length * 6) > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); yPosition = margin; }
-      doc.text(speakerLines, margin, yPosition);
-      yPosition += (speakerLines.length * 6);
-      
-      doc.setFont("helvetica", 'normal');
-      const contentLines = doc.splitTextToSize(message.content, textWidth);
-      if (yPosition + (contentLines.length * 6) > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); yPosition = margin; }
-      doc.text(contentLines, margin, yPosition);
-      yPosition += (contentLines.length * 6) + 8;
-      if (yPosition > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); yPosition = margin; }
+    // Initialize PDF with professional settings
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
     });
     
-    doc.save(`${chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+    // Page dimensions
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Professional red and black color scheme
+    const colors = {
+      red: [180, 0, 0],           // Deep red
+      lightRed: [220, 0, 0],      // Brighter red for accents
+      black: [0, 0, 0],           // Pure black
+      darkGray: [51, 51, 51],     // Dark gray for text
+      mediumGray: [102, 102, 102], // Medium gray for secondary text
+      lightGray: [230, 230, 230],  // Light gray for separators
+      white: [255, 255, 255]       // White
+    };
+    
+    // Metadata
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    let yPosition = 20;
+    
+    // Title section - integrated into the page (not a separate header)
+    doc.setFillColor(...colors.white);
+    doc.setTextColor(...colors.black);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", 'bold');
+    doc.text(chatTitle, margin, yPosition);
+    
+    // Add subtle red underline beneath title
+    yPosition += 3;
+    doc.setDrawColor(...colors.red);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, margin + doc.getTextWidth(chatTitle), yPosition);
+    
+    // Export date in smaller text
+    yPosition += 7;
+    doc.setTextColor(...colors.mediumGray);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", 'normal');
+    doc.text(`Exported on ${currentDate} at ${currentTime}`, margin, yPosition);
+    
+    // Add space after header section
+    yPosition += 15;
+    
+    // Process messages with professional styling
+    messages.forEach((message, index) => {
+      const isUser = message.role === "user";
+      const speaker = isUser ? "You" : "AI Assistant";
+      
+      // Check if we need a new page
+      if (yPosition > pageHeight - 40) {
+        doc.addPage();
+        yPosition = 20;
+        
+        // Add subtle page number at the bottom of each page
+        doc.setTextColor(...colors.mediumGray);
+        doc.setFontSize(8);
+        doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      }
+      
+      // Message section
+      const bubbleY = yPosition;
+      const bubblePadding = 10;
+      
+      // Calculate message height
+      doc.setFontSize(10);
+      const contentLines = doc.splitTextToSize(message.content, contentWidth - (bubblePadding * 2));
+      const messageHeight = (contentLines.length * 6) + 20; // Height for content + speaker + padding
+      
+      // Draw message section with clean styling
+      if (isUser) {
+        // User message styling - subtle red left border
+        doc.setDrawColor(...colors.red);
+        doc.setLineWidth(1.5);
+        doc.line(margin, bubbleY, margin, bubbleY + messageHeight);
+        
+        // Light gray background
+        doc.setFillColor(...colors.lightGray);
+        doc.rect(margin + 3, bubbleY, contentWidth - 3, messageHeight, 'F');
+        
+        // Add speaker name
+        doc.setTextColor(...colors.red);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", 'bold');
+        doc.text(speaker, margin + bubblePadding, bubbleY + 8);
+      } else {
+        // AI message styling - subtle black left border
+        doc.setDrawColor(...colors.black);
+        doc.setLineWidth(1.5);
+        doc.line(margin, bubbleY, margin, bubbleY + messageHeight);
+        
+        // Very light gray background
+        doc.setFillColor(245, 245, 245);
+        doc.rect(margin + 3, bubbleY, contentWidth - 3, messageHeight, 'F');
+        
+        // Add speaker name
+        doc.setTextColor(...colors.black);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", 'bold');
+        doc.text(speaker, margin + bubblePadding, bubbleY + 8);
+      }
+      
+      // Add timestamp if available
+      if (message.timestamp) {
+        const timestamp = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        doc.setFontSize(8);
+        doc.setTextColor(...colors.mediumGray);
+        doc.text(timestamp, pageWidth - margin - bubblePadding, bubbleY + 8, { align: 'right' });
+      }
+      
+      // Add message content with proper styling
+      doc.setTextColor(...colors.darkGray);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", 'normal');
+      
+      // Handle content that might span multiple pages
+      let contentY = bubbleY + 18;
+      for (let i = 0; i < contentLines.length; i++) {
+        if (contentY > pageHeight - 25) {
+          doc.addPage();
+          
+          // Add page number
+          doc.setTextColor(...colors.mediumGray);
+          doc.setFontSize(8);
+          doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+          
+          // Reset position for new page
+          contentY = 20;
+          
+          // Add continuation note
+          doc.setTextColor(...colors.mediumGray);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", 'italic');
+          doc.text("(continued)", margin, contentY);
+          contentY += 10;
+          
+          // Reset text style for content
+          doc.setTextColor(...colors.darkGray);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", 'normal');
+        }
+        
+        // Ensure text is properly aligned
+        doc.text(contentLines[i], margin + bubblePadding, contentY);
+        contentY += 6;
+      }
+      
+      // Update yPosition for next message
+      yPosition = bubbleY + messageHeight + 15;
+      
+      // Add separator between messages (except for the last message)
+      if (index < messages.length - 1) {
+        // Check if we have space for the separator
+        if (yPosition + 5 > pageHeight - 25) {
+          doc.addPage();
+          yPosition = 20;
+          
+          // Add page number
+          doc.setTextColor(...colors.mediumGray);
+          doc.setFontSize(8);
+          doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        } else {
+          // Add simple, professional separator
+          doc.setDrawColor(...colors.lightGray);
+          doc.setLineWidth(0.5);
+          doc.line(margin + 10, yPosition - 7, pageWidth - margin - 10, yPosition - 7);
+        }
+      }
+    });
+    
+    // Add final page number if not already added
+    doc.setTextColor(...colors.mediumGray);
+    doc.setFontSize(8);
+    doc.text(`Page ${doc.internal.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    
+    // Add subtle footer with document info
+    doc.setDrawColor(...colors.lightGray);
+    doc.setLineWidth(0.5);
+    doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+    
+    doc.setTextColor(...colors.mediumGray);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", 'normal');
+    doc.text("Conversation Export", margin, pageHeight - 10);
+    
+    // Save the PDF with a clean filename
+    const safeFileName = chatTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`${safeFileName}.pdf`);
     setShowExportMenu(false);
   };
-
+    
   const exportToDocx = async () => {
     const docParagraphs: Paragraph[] = [];
     docParagraphs.push(new Paragraph({ text: chatTitle, heading: HeadingLevel.HEADING_1, spacing: { after: 200 } }));
