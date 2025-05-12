@@ -462,22 +462,16 @@ export function ChatView({
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-start">
           <ElevenLabsAgent 
               key={agentKey}
               agentId={agentIdToUse}
               onNewMessage={handleNewMessageFromAgent}
               onSpeakingStatusChange={setIsAgentSpeaking}
               onPauseStateChange={handlePauseStateChange}
+              initiateDocumentUpload={initiateDocumentUpload}
+              isProcessingDocument={isProcessingDocument}
           />
-          <button
-            onClick={initiateDocumentUpload}
-            disabled={isProcessingDocument}
-            className="ml-3 p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            title="Upload a document"
-          >
-            <Paperclip size={20} />
-          </button>
         </div>
       </div>
     </div>

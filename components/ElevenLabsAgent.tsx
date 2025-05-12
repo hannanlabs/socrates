@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useConversation, Role } from '@11labs/react';
-import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle } from 'lucide-react';
+import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle, Paperclip } from 'lucide-react';
 
 export interface TranscriptEntry {
   speaker: 'user' | 'assistant';
@@ -15,6 +15,8 @@ interface ElevenLabsAgentProps {
   onSpeakingStatusChange?: (isSpeaking: boolean) => void;
   onNewMessage?: (message: TranscriptEntry) => void;
   onPauseStateChange?: (isPaused: boolean) => void;
+  initiateDocumentUpload: () => void;
+  isProcessingDocument?: boolean;
 }
 
 interface SDKMessage {
@@ -29,7 +31,9 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   agentId, 
   onSpeakingStatusChange, 
   onNewMessage,
-  onPauseStateChange
+  onPauseStateChange,
+  initiateDocumentUpload,
+  isProcessingDocument
 }) => {
   const [isPaused, setIsPaused] = useState(true); 
   const [statusMessage, setStatusMessage] = useState<string | null>('Paused - Click Play to Start');
@@ -245,13 +249,13 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="relative w-full">
-        <div className="absolute bottom-2 left-2 flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded">
+      <div className="w-full flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded">
           <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
           <span>{currentDisplayStatus}</span>
         </div>
         
-        <div className="absolute bottom-2 right-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <button 
             className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} flex items-center justify-center`}
             onClick={togglePause}
@@ -269,12 +273,20 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
               <RefreshCw size={16} className={isConnecting ? 'animate-spin' : ''} />
             </button>
           )}
-          
+
+          <button
+            onClick={initiateDocumentUpload}
+            disabled={isProcessingDocument}
+            className="p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            title="Upload a document"
+          >
+            <Paperclip size={20} />
+          </button>
         </div>
       </div>
-      
+
       {statusMessage && currentDisplayStatus !== statusMessage && (
-        <div className="mt-2 text-sm text-gray-400">
+        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 truncate">
           {statusMessage}
         </div>
       )}
