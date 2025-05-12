@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useAuth } from "@/lib/supabase/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { LucideChevronLeft, LucideChevronRight } from "lucide-react"
+import { LucideChevronLeft, LucideChevronRight, ArrowLeft } from "lucide-react"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -30,7 +30,17 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex w-full h-full min-h-screen">
+    <div className="flex w-full h-full min-h-screen relative">
+      {/* Back Button */}
+      <button 
+        onClick={() => window.location.href = 'https://socrateslanding.vercel.app/'}
+        className="absolute top-4 left-4 text-black hover:text-gray-700 transition-colors z-10 p-2 rounded-full hover:bg-gray-100"
+        aria-label="Back to landing page"
+        title="Back to landing page"
+      >
+        <ArrowLeft size={24} />
+      </button>
+
       {/* Left side - Login form */}
       <div className="w-full md:w-1/2 bg-white p-4 sm:p-8 flex flex-col justify-center overflow-y-auto">
         <div className="max-w-md mx-auto w-full">
