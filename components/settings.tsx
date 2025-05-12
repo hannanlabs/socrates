@@ -171,20 +171,6 @@ export function Settings() {
                     </p>
                   )}
                 </div>
-
-                <div className="border-t border-gray-700 pt-6">
-                  <h3 className="text-gray-200 font-medium mb-2">Sign Out</h3>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-400">Log out of your account on this device.</p>
-                    <Button
-                      variant="outline"
-                      className="bg-[#333333] hover:bg-[#444444] text-white border-gray-600"
-                      onClick={handleLogout}
-                    >
-                      Log out
-                    </Button>
-                  </div>
-                </div>
               </div>
             </div>
           )}
