@@ -2,8 +2,6 @@
 
 Socrates is your all-in-one AI companion designed to help you learn, explore, and create with ease. Whether you’re brainstorming the next big business plan, working through tough homework assignments, or simply diving into new topics for personal growth, Socrates is here to guide you every step of the way.
 
----
-
 ## What Socrates Can Do for You
 
 • **Homework Helper**  
@@ -18,28 +16,3 @@ Socrates is your all-in-one AI companion designed to help you learn, explore, an
 • **Endless Inspiration**  
   Learning never stops. Socrates sparks curiosity with surprising angles and deep, reasoned logic—helping you discover new interests, explore side projects, or just satisfy your fascination with the world.
 
----
-
-## Why Choose Socrates
-
-• **Easy to Use**  
-  Open a conversation, ask your question, and watch Socrates break it down into approachable discussions or step-by-step guides.
-
-• **Global Perspective**  
-  Gain insights from diverse fields—be it literature, science, art, or technology—to form well-rounded viewpoints.
-
-• **Engaging Feedback**  
-  Socrates clarifies, questions, and prompts you to think more critically. Build deeper understanding instead of memorizing.
-
-• **Personalized Assistance**  
-  Tailor the conversation to your style of learning—Socrates adapts to you, not the other way around.
-
----
-
-## Unlock Your Potential
-
-Socrates is more than just a helper. It’s a companion ready to tackle your questions on anything from ancient philosophy to cutting-edge science. Think of it as a personal mentor, research assistant, and brainstorming buddy rolled into one.
-
-Take a leap into a world of discovery—no matter your goals, Socrates is here to support your growth, spark your creativity, and help you succeed in every endeavor.
-
----
