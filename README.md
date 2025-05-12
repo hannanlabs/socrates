@@ -1,83 +1,151 @@
-My high level idea with this is the following :
+# Conversational AI with ElevenLabs and Next.js
 
-i want to create a chatgpt like interface where a user can open a chat and talk to a 3d avatar with voice. The use case I am targetting is in pretty much everything where you need to have a socratic discussion. For example, let's say you're iterating on a startup idea, the ability to debate on the idea would help massively. Or another use case, let's say you're a student who wants to debate the course material with discourse, you would have that ability. I want to design the UI in such a way that we're able to open the 3d avatar and start that discourse, and not have a filter. Just talk about anything and the AI will engage in conversation.
-
-What do you think of this idea, I am thinking of adding some sort of tolerance parameter, where we can lower the filter and have it give you the raw truth, I'd like to know the technologies involved at a high level.
-
-Thet tech stack i'd like to use is next.js + typescript + trpc (backend) + fastapi (other backend)
-
-
-Your idea for a real-time conversational AI with a 3D avatar for Socratic discussion is feasible, and several existing technologies can be leveraged to build it. Here’s a high-level breakdown of the frameworks, tools, and considerations:
+This project is a Next.js application that integrates with Supabase for user authentication and stores metadata (like the ElevenLabs API key and Agent ID) directly on the user object. The system allows users to interact with an ElevenLabs ConversationalAI Agent, and upload documents to enhance the agent’s knowledge base. Below is an overview of the key features and relevant details:
 
 ---
 
-### **Core Technologies Needed**
-#### **1. Voice Processing**
-- **Speech-to-Text (STT):**  
-  Use services like **Whisper** (open-source), **Google Speech-to-Text**[3], or **ElevenLabs**[7] for real-time transcription.  
-- **Text-to-Speech (TTS):**  
-  **ElevenLabs** (for natural voices) or **Google Text-to-Speech**[3] to generate the avatar’s voice.
+## Overview
 
-#### **2. Conversational AI**
-- **Large Language Model (LLM):**  
-  Integrate **OpenAI GPT-4**, **PaLM API**[3], or self-hosted models like **OLAMA**[1] for unfiltered, debate-focused responses.  
-  - Implement a "tolerance parameter" via **prompt engineering** (e.g., adjusting system prompts like *"Respond candidly, prioritize logical rigor over politeness"*).  
+1. **Next.js (App Router)**  
+   Leverages the App Router for routes, including server-side route handlers for API endpoints under the `app/api/` directory.
 
-#### **3. 3D Avatar Animation**
-- **Avatar Creation:**  
-  Use **Blender**[1] or **ReadyPlayerMe**[7] to design the 3D model.  
-- **Lip-Syncing & Expressions:**  
-  Leverage **MediaPipe’s audio-to-blendshapes model**[3] or **three.js**[3][7] to sync lip movements with generated speech.  
-- **Rendering Engine:**  
-  **React Three Fiber** (for React/Next.js integration)[7] or **Unity** for advanced animations.
+2. **Supabase Authentication**  
+   Manages user authentication with Supabase. User credentials are handled securely, and session management is tracked via Supabase’s auth service.  
+   Custom metadata fields stored on each user:
+   - `elevenlabs_agent_id`
+   - `elevenlabs_api_key`
 
-#### **4. Real-Time Communication**
-- **Backend:**  
-  Use **tRPC** (for Next.js API routes) and **FastAPI** (for async tasks like LLM inference or WebSocket streaming).  
-- **WebSockets:**  
-  Handle real-time audio/video streams between the frontend and backend.
+3. **ElevenLabs Integration**  
+   Utilizes ElevenLabs’ ConversationalAI endpoints and the ElevenLabsClient SDK.  
+   - Users can upload documents to ElevenLabs’ knowledge base, which is then linked to the user’s configured Agent ID.
 
-#### **5. Frontend UI**
-- **Next.js + TypeScript:**  
-  Build the chat interface with a side-by-side view of the 3D avatar and conversation history[1][6].  
-- **State Management:**  
-  Use **Zustand** or **Jotai** for real-time updates to the avatar’s animations and chat log.
+4. **Settings Page**  
+   A dedicated Settings page for users to enter and persist their ElevenLabs API key and Agent ID. These values are stored in the user’s metadata within Supabase.
+
+5. **Document Upload Flow**  
+   - Users select or drag files into an interface.  
+   - The file is submitted to an API route (`/api/agent/set-document`), which sends it to ElevenLabs, updates the knowledge base, and links the document to the user’s agent.
+
+6. **Chat Interface**  
+   - The main conversation view displays messages.  
+   - A chat sidebar to select or create new chats.  
+   - Users can attach documents and see real-time feedback while the upload is processed.  
+   - Once processed, the agent can consume the newly uploaded data in subsequent queries.
 
 ---
 
-### **Existing Solutions to Borrow From**
-- **Pipecat**[5]: An open-source framework for building real-time voice agents. It supports ElevenLabs, Whisper, and WebSocket streaming.  
-- **Google’s Talking Character Template**[3]: Demonstrates integrating PaLM API with 3D avatars using MediaPipe and three.js.  
-- **Dittin AI**[6]: A no-filter platform with 3D avatars and voice messaging (customizable via API).
+## File Structure
+
+Below is a high-level view of some key directories and files:
+
+- `app/`
+  - `layout.tsx` – Global page layout for Next.js App.
+  - `settings/page.tsx` – Renders the Settings component.
+  - `api/agent/`
+    - `set-document/route.ts` – Route handler that receives file uploads and configures them in ElevenLabs.
+- `components/`
+  - `Settings.tsx` – Manages reading and saving user metadata fields (mastery: Agent ID, API key).
+  - `ChatPageContent.tsx` – Coordinates uploading documents and starting chat sessions.
+  - `ChatView.tsx` – The main chat UI for sending/receiving messages.
+  - `ChatSidebar.tsx` – Sidebar listing existing chats and allowing the creation of new ones.
+  - `ElevenLabsAgent.tsx` – The client-side logic to interface with ElevenLabs for voice generation or text response.
+
+- `lib/supabase/`
+  - `auth-context.tsx` – React Context for user authentication logic and session management. 
+  - `client.ts` – Supabase client instance.
 
 ---
 
----
+## How It Works
 
-### **Suggested Stack**
-| Component          | Tools                                                                                     |
-|--------------------|------------------------------------------------------------------------------------------|
-| **Frontend**       | Next.js, React Three Fiber, Three.js, Zustand                                            |
-| **Backend**        | tRPC (Next.js), FastAPI (Python for async LLM calls)                                     |
-| **Voice**          | ElevenLabs (TTS), Whisper (STT)                                                          |
-| **LLM**            | PaLM API (for structured debates) or self-hosted OLAMA/Mistral (for unfiltered responses) |
-| **Avatar**         | ReadyPlayerMe (pre-built models) + MediaPipe/three.js for animation                      |
-| **Real-Time**      | WebSockets, Pipecat framework[5]                                                        |
+1. **User Authentication**  
+   - On initial load, the user is either authenticated automatically if a Supabase session is present or prompted to log in/sign up.  
+   - The `AuthProvider` tracks the user object and session.
 
----
+2. **Adding/Editing Credentials**  
+   - The user visits the “Settings” page.  
+   - Inside `Settings.tsx`, the Agent ID and API key are displayed in text fields.  
+   - On save, these fields are updated in the user’s metadata via Supabase auth updates.
 
-### **Implementation Steps**
-1. **Prototype the Chat UI:**  
-   Build a Next.js interface with a chat history panel and placeholder avatar.  
-2. **Integrate Voice:**  
-   Add ElevenLabs TTS and Whisper STT with WebSocket streaming.  
-3. **Connect LLM:**  
-   Use FastAPI to route user input to the LLM and stream responses back.  
-4. **Animate Avatar:**  
-   Implement MediaPipe’s audio-to-blendshapes model[3] to sync lip movements with audio.  
-5. **Add "Tolerance" Logic:**  
-   Adjust LLM system prompts (e.g., *"Debate rigorously, avoid hedging phrases"*) and temperature settings.
+3. **Document Upload**  
+   - In the chat interface (`ChatPageContent` and `ChatView`), users can pick a document to upload.  
+   - The system collects both the file and the user’s ElevenLabs credentials (from metadata) and POSTs them to `/api/agent/set-document`.  
+   - The route uploads the file to ElevenLabs, updates the user’s agent knowledge base, and confirms success or failure.
+
+4. **Real-Time Chat**  
+   - On the client side, the user can interact with the agent using text or voice (via `ElevenLabsAgent.tsx`).  
+   - The agent references the newly uploaded documents.  
+   - Chat messages are stored in Supabase for persistent conversation history.
 
 ---
 
+## Installation & Setup
 
+1. **Clone the Repository**  
+   ```bash
+   git clone https://github.com/yourusername/conversational-ai-nextjs.git
+   cd conversational-ai-nextjs
+   ```
+
+2. **Install Dependencies**  
+   ```bash
+   npm install
+   ```
+   or  
+   ```bash
+   pnpm install
+   ```
+
+3. **Environment Variables**  
+   Create a `.env` file for Next.js environment variables:  
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-instance-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+   Optionally place a default ElevenLabs API key if desired (though users can manage their own in Settings):  
+   ```
+   ELEVENLABS_API_KEY=your-default-elevenlabs-api-key
+   ```
+   This is optional now because each user can enter their own.  
+
+4. **Running the Development Server**  
+   ```bash
+   npm run dev
+   ```
+   or  
+   ```bash
+   pnpm dev
+   ```
+   Then open http://localhost:3000 in your browser.
+
+---
+
+## Usage
+
+1. **Register or Sign In** to create/set up an account in the application.  
+2. **Navigate to the Settings** page to enter your ElevenLabs Agent ID and API Key.  
+3. **Create or Select a Chat** from the sidebar.  
+4. **Upload a Document** by clicking on the paperclip icon, pick your file.  
+5. **Use Document** once it’s uploaded, watch for the success message.  
+6. **Ask Questions** about that document through voice or text. The agent will utilize the updated knowledge base.
+
+---
+
+## Technologies
+
+- **Next.js** (App Router)  
+- **React**  
+- **Supabase** (Auth & Database)  
+- **TypeScript**  
+- **ElevenLabs** (ConversationalAI, text-to-speech/voice-based features)
+
+---
+
+## Contributing
+
+1. Fork the repository.  
+2. Create a new feature branch.  
+3. Make changes and commit.  
+4. Open a pull request.
+
+---
