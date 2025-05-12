@@ -289,14 +289,14 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       <div className="w-full flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2 text-xs bg-opacity-70 bg-black text-white px-2 py-1 rounded min-w-0 flex-shrink">
-          <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-red-500'}`}></div>
-          <span className="truncate">{terseCalculatedStatus}</span>
+        <div className="flex items-center gap-2 text-xs bg-opacity-90 bg-primary text-primary-foreground px-2 py-1 rounded min-w-0 flex-shrink">
+          <div className={`h-2 w-2 rounded-full ${sdkStatus === 'connected' && !isPaused ? 'bg-green-500' : 'bg-white'}`}></div>
+          <span className="truncate font-medium">{terseCalculatedStatus}</span>
         </div>
         
         <div className="flex items-center gap-2 flex-shrink-0">
           <button 
-            className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} flex items-center justify-center`}
+            className={`w-8 h-8 rounded-full ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-primary hover:bg-primary/90'} flex items-center justify-center text-white`}
             onClick={togglePause}
             title={isPaused ? 'Resume (start API usage)' : 'Pause (stop API usage)'}
           >
@@ -305,7 +305,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
 
           {sdkStatus === 'disconnected' && !isConnecting && !isPaused && (
             <button 
-              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 flex items-center justify-center"
+              className="w-8 h-8 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center text-white"
               onClick={handleReconnect}
               title="Reconnect"
             >
@@ -316,7 +316,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
           <button
             onClick={initiateDocumentUpload}
             disabled={isProcessingDocument}
-            className="p-2 bg-[#2A2A2A] hover:bg-[#383838] text-gray-300 rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             title="Upload a document"
           >
             <Paperclip size={20} />
@@ -327,7 +327,7 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
       {/* Dedicated container for long status messages/transcriptions (statusMessage from state) */}
       {/* Show if statusMessage exists and is different from the terseCalculatedStatus to avoid redundancy */}
       {statusMessage && statusMessage !== terseCalculatedStatus && (
-        <div className="mt-1 text-xs text-gray-400 w-full text-left px-1 overflow-hidden"> 
+        <div className="mt-1 text-xs text-primary w-full text-left px-1 overflow-hidden"> 
           <p className="break-words whitespace-normal"> 
             {statusMessage}
           </p>

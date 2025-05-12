@@ -200,7 +200,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   };
 
   return (
-    <div className="flex h-screen bg-[#171717] text-white overflow-hidden">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       {/* Hidden File Input */}
       <input 
         type="file" 
@@ -211,7 +211,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
       />
 
       {/* Sidebar */}
-      <div className="w-1/4 min-w-[280px] max-w-[400px] bg-[#1D1D1D] flex flex-col border-r border-[#2A2A2A]">
+      <div className="w-1/4 min-w-[280px] max-w-[400px] bg-sidebar-background flex flex-col border-r border-sidebar-border">
         <ChatSidebar 
           selectedChatId={selectedChatId} 
           onSelectChat={handleSelectChat}
@@ -221,7 +221,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-[#171717]">
+      <div className="flex-1 flex flex-col bg-background">
         {selectedChatId ? (
           <ChatView 
             chatId={selectedChatId} 
@@ -239,11 +239,11 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
             <div className="max-w-md">
               <svg className="h-20 w-20 mb-6 mx-auto opacity-50" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="45" stroke="#E50041" strokeWidth="5"/>
-                <path d="M30 50L45 65L70 35" stroke="#E50041" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="50" cy="50" r="45" stroke="hsl(var(--primary))" strokeWidth="5"/>
+                <path d="M30 50L45 65L70 35" stroke="hsl(var(--primary))" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <h2 className="text-2xl font-semibold text-gray-300 mb-3">Welcome to Your Chat</h2>
-              <p className="text-gray-400 mb-8">
+              <h2 className="text-2xl font-semibold text-foreground mb-3">Welcome to Your Chat</h2>
+              <p className="text-muted-foreground mb-8">
                 Select a conversation from the sidebar
               </p>
               {/* Removed document upload UI from here */}

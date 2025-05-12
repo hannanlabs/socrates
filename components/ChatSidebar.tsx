@@ -158,17 +158,17 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#1D1D1D] text-white">
+    <div className="h-full flex flex-col bg-sidebar-background text-sidebar-foreground">
       {/* Header with Search */}
-      <div className="p-4 border-b border-[#2A2A2A]">
+      <div className="p-4 border-b border-sidebar-border">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
             type="text"
             placeholder="Search chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#252525] border border-[#333333] rounded-md py-2 pl-10 pr-3 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#E50041] placeholder-gray-500"
+            className="w-full bg-input border border-border rounded-md py-2 pl-10 pr-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
           />
         </div>
       </div>
@@ -177,21 +177,21 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#E50041] border-t-transparent"></div>
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : filteredChats.length === 0 && !searchQuery ? (
-          <div className="text-center py-10 px-3 text-gray-400 text-sm">
+          <div className="text-center py-10 px-3 text-muted-foreground text-sm">
             <MessageSquare size={40} className="mx-auto mb-3 opacity-50"/>
             No conversations yet.
             <button 
               onClick={handleCreateNewChat}
-              className="mt-4 w-full flex items-center justify-center bg-gradient-to-r from-[#E50041] to-[#C00031] hover:opacity-90 text-white font-medium py-2 px-4 rounded-md text-sm"
+              className="mt-4 w-full flex items-center justify-center bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-md text-sm"
             >
               <PlusCircle size={18} className="mr-2" /> Start New Chat
             </button>
           </div>
         ) : filteredChats.length === 0 && searchQuery ? (
-            <div className="text-center py-10 px-3 text-gray-400 text-sm">
+            <div className="text-center py-10 px-3 text-muted-foreground text-sm">
              <Search size={40} className="mx-auto mb-3 opacity-50"/>
              No chats found for "{searchQuery}".
             </div>
@@ -200,7 +200,7 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
             <div
               key={chat.id}
               className={`p-3 rounded-lg cursor-pointer transition-colors flex items-center justify-between group 
-                          ${selectedChatId === chat.id ? 'bg-[#E50041] text-white shadow-md' : 'hover:bg-[#2A2A2A] text-gray-300'}`}
+                          ${selectedChatId === chat.id ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-md' : 'hover:bg-sidebar-accent text-sidebar-accent-foreground'}`}
               onClick={() => onSelectChat(chat.id)}
             >
               <div className="flex-1 min-w-0">
@@ -211,25 +211,25 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
                       value={editedTitle}
                       onChange={(e) => setEditedTitle(e.target.value)}
                       className={`flex-1 bg-transparent border rounded px-2 py-1 text-sm mr-1 focus:outline-none 
-                                  ${selectedChatId === chat.id ? 'border-white/50 focus:border-white' : 'border-gray-500 focus:border-gray-400'}`}
+                                  ${selectedChatId === chat.id ? 'border-sidebar-primary-foreground/50 focus:border-sidebar-primary-foreground text-sidebar-primary-foreground' : 'border-border focus:border-foreground text-foreground'}`}
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleSaveTitle(chat.id, e as any);
                         if (e.key === 'Escape') handleCancelEdit(e as any);
                       }}
                     />
-                    <button onClick={(e) => handleSaveTitle(chat.id, e)} className={`p-1 hover:text-green-400 ${selectedChatId === chat.id ? 'text-white/80' : 'text-gray-400'}`} title="Save">
+                    <button onClick={(e) => handleSaveTitle(chat.id, e)} className={`p-1 hover:text-green-500 ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground/80' : 'text-muted-foreground'}`} title="Save">
                       <Save size={16} />
                     </button>
-                    <button onClick={handleCancelEdit} className={`p-1 hover:text-red-400 ${selectedChatId === chat.id ? 'text-white/80' : 'text-gray-400'}`} title="Cancel">
+                    <button onClick={handleCancelEdit} className={`p-1 hover:text-destructive ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground/80' : 'text-muted-foreground'}`} title="Cancel">
                       <X size={16} />
                     </button>
                   </div>
                 ) : (
                   <>
-                    <h3 className={`text-sm font-medium truncate ${selectedChatId === chat.id ? 'text-white' : 'text-gray-100 group-hover:text-white'}`}>{chat.title}</h3>
+                    <h3 className={`text-sm font-medium truncate ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground' : 'text-sidebar-foreground group-hover:text-sidebar-accent-foreground'}`}>{chat.title}</h3>
                     {/* Preview of last message can be added here if available */}
-                    <p className={`text-xs truncate ${selectedChatId === chat.id ? 'text-white/70' : 'text-gray-400 group-hover:text-gray-300'}`}>
+                    <p className={`text-xs truncate ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground/70' : 'text-muted-foreground group-hover:text-sidebar-accent-foreground/80'}`}>
                       {/* Placeholder for last message snippet or use date */}
                       {`Last activity: ${formatDate(chat.updated_at)}`}
                     </p>
@@ -241,14 +241,14 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
                               ${selectedChatId === chat.id ? 'opacity-100' : ''}">
                   <button
                     onClick={(e) => handleEditTitle(chat, e)}
-                    className={`p-1 rounded hover:bg-white/20 ${selectedChatId === chat.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-gray-100'}`}
+                    className={`p-1 rounded hover:bg-accent/80 ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground/80 hover:text-sidebar-primary-foreground' : 'text-muted-foreground hover:text-accent-foreground'}`}
                     title="Edit title"
                   >
                     <Edit2 size={14} />
                   </button>
                   <button
                     onClick={(e) => handleArchiveChat(chat.id, e)}
-                    className={`p-1 rounded hover:bg-white/20 ${selectedChatId === chat.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-red-400'}`}
+                    className={`p-1 rounded hover:bg-accent/80 ${selectedChatId === chat.id ? 'text-sidebar-primary-foreground/80 hover:text-sidebar-primary-foreground' : 'text-muted-foreground hover:text-destructive'}`}
                     title="Archive chat"
                   >
                     <Trash2 size={14} />
@@ -261,32 +261,32 @@ export function ChatSidebar({ selectedChatId, onSelectChat, onNewChat, onChatTit
       </div>
 
       {/* Footer with New Chat Button & User Info/Logout/Settings */}
-      <div className="p-3 border-t border-[#2A2A2A] mt-auto">
+      <div className="p-3 border-t border-sidebar-border mt-auto">
         <button 
           onClick={handleCreateNewChat}
-          className="w-full flex items-center justify-center bg-[#252525] hover:bg-[#303030] text-gray-200 font-medium py-2.5 px-4 rounded-md text-sm transition-colors mb-3"
+          className="w-full flex items-center justify-center bg-muted hover:bg-accent text-accent-foreground font-medium py-2.5 px-4 rounded-md text-sm transition-colors mb-3"
         >
-          <PlusCircle size={18} className="mr-2 text-[#E50041]" /> Start New Chat
+          <PlusCircle size={18} className="mr-2 text-primary" /> Start New Chat
         </button>
         <div className="flex items-center justify-between">
             <div className="flex items-center min-w-0">
-                <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-sm font-semibold text-white mr-2.5 flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground mr-2.5 flex-shrink-0">
                     {getInitial()}
                 </div>
-                <span className="text-xs text-gray-300 truncate">{user?.email}</span>
+                <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
             </div>
             <div className="flex items-center">
               <button 
                   onClick={() => router.push('/settings')}
                   title="Settings"
-                  className="text-gray-400 hover:text-[#E50041] p-1 rounded mr-2"
+                  className="text-muted-foreground hover:text-primary p-1 rounded mr-2"
               >
                   <Settings size={18}/>
               </button>
               <button 
                   onClick={handleLogout}
                   title="Logout"
-                  className="text-gray-400 hover:text-[#E50041] p-1 rounded"
+                  className="text-muted-foreground hover:text-primary p-1 rounded"
               >
                   <LogOut size={18}/>
               </button>

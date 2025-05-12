@@ -39,7 +39,7 @@ const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
     return Array.from({ length: particleCount }).map((_, i) => ({
       position: [ (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5 ],
       radius: 0.015 + Math.random() * 0.03,
-      color: new THREE.Color( `hsl(${Math.random() * 60 + 180}, 70%, 60%)` ),
+      color: new THREE.Color( `hsl(210, ${Math.random() * 30 + 70}%, ${Math.random() * 20 + 60}%)` ),
       speed: 0.2 + Math.random() * 0.8,
       axis: new THREE.Vector3( Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5 ).normalize()
     }));
@@ -57,8 +57,10 @@ const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
           particle.scale.setScalar(data.radius * scaleBase * 20);
           if (particle.material instanceof THREE.MeshStandardMaterial) {
             if (isSpeaking) {
-              const hue = (state.clock.elapsedTime * 0.2 + i * 0.02) % 1;
-              particle.material.color.setHSL(hue, 0.9, 0.65);
+              const hue = 210 / 360;
+              const saturation = 0.9 + Math.sin(state.clock.elapsedTime * 0.5 + i * 0.1) * 0.1;
+              const lightness = 0.65 + Math.sin(state.clock.elapsedTime * 1.5 + i * 0.3) * 0.1;
+              particle.material.color.setHSL(hue, saturation, lightness);
               particle.material.emissive.setHSL(hue, 0.7, 0.4);
               particle.material.emissiveIntensity = 0.8;
             } else {
@@ -85,6 +87,11 @@ const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
 
 const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
+  const primaryColor = "#3B82F6";
+  const darkPrimaryColor = "#1E40AF";
+  const emissivePrimary = "#1D4ED8";
+  const darkEmissivePrimary = "#1E3A8A";
+
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.6) * 0.08;
@@ -102,10 +109,10 @@ const FloatingLogo = ({ isSpeaking }: { isSpeaking: boolean }) => {
     <mesh ref={meshRef}>
       <icosahedronGeometry args={[0.6, 0]} /> 
       <meshStandardMaterial 
-        color={isSpeaking ? "#E50041" : "#A0002D"} 
+        color={isSpeaking ? primaryColor : darkPrimaryColor} 
         roughness={0.2}
         metalness={0.6}
-        emissive={isSpeaking ? "#E50041" : "#400012"}
+        emissive={isSpeaking ? emissivePrimary : darkEmissivePrimary}
         emissiveIntensity={isSpeaking ? 0.6 : 0.2}
       />
     </mesh>
@@ -136,6 +143,9 @@ export function ChatView({
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
   const agentInstanceIdBase = `agent-for-chat-${chatId}`;
+
+  // Define primary color for 3D elements here
+  const primaryColor = "#3B82F6"; // Example: Tailwind's blue-500 approx
 
   const agentIdToUse = user?.user_metadata?.elevenlabs_agent_id;
   const agentKey = `${agentInstanceIdBase}-${agentIdToUse}`;
@@ -472,41 +482,41 @@ export function ChatView({
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex flex-col justify-center items-center p-4 bg-[#171717]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#E50041] mb-4" />
-        <p className="text-gray-400">Loading conversation...</p>
+      <div className="flex-1 flex flex-col justify-center items-center p-4 bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Loading conversation...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex-1 flex flex-col justify-center items-center p-6 bg-[#171717] text-center">
-        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-        <h3 className="text-xl text-gray-200 mb-2">Error Loading Chat</h3>
-        <p className="text-gray-400 mb-6 max-w-md">{error}</p>
+      <div className="flex-1 flex flex-col justify-center items-center p-6 bg-background text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-xl text-foreground mb-2">Error Loading Chat</h3>
+        <p className="text-muted-foreground mb-6 max-w-md">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#171717] h-full overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b border-[#2A2A2A] bg-[#1D1D1D]">
-        <h1 className="text-lg font-semibold text-gray-100 truncate">{chatTitle}</h1>
+    <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <h1 className="text-lg font-semibold text-foreground truncate">{chatTitle}</h1>
         <div className="relative" ref={exportMenuRef}>
           <button 
             onClick={() => setShowExportMenu(!showExportMenu)}
-            className="flex items-center bg-[#2A2A2A] hover:bg-[#333333] text-gray-200 px-3 py-1.5 rounded-md text-sm transition-colors"
+            className="flex items-center bg-muted hover:bg-accent text-accent-foreground px-3 py-1.5 rounded-md text-sm transition-colors"
           >
             <Download className="mr-1.5 h-4 w-4" />
             Export
             <ChevronDown className={`ml-1.5 h-4 w-4 transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
           </button>
           {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-[#2A2A2A] border border-[#333333] rounded-md shadow-xl z-20 py-1">
+            <div className="absolute right-0 mt-2 w-48 bg-popover border border-border rounded-md shadow-xl z-20 py-1">
               {[{ label: "PDF (.pdf)", action: exportToPdf}
               ].map(item => (
-                <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-gray-200 hover:bg-[#383838] transition-colors">
+                <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
                   {item.label}
                 </button>
               ))}
@@ -517,38 +527,38 @@ export function ChatView({
 
       <div className="flex-1 overflow-y-auto p-4 relative">
         {!isPaused && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center text-gray-400">
+          <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
             <div className="w-full h-[300px] max-w-md mx-auto mb-6">
               <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
                 <ambientLight intensity={0.6} />
                 <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
-                <pointLight position={[-5, -5, -5]} intensity={0.7} color="#E50041" />
+                <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
                 <FloatingLogo isSpeaking={isAgentSpeaking} />
                 <AudioVisualizer isSpeaking={isAgentSpeaking} />
               </Canvas>
             </div>
-            <h2 className="text-xl font-semibold text-gray-200 mt-4">
+            <h2 className="text-xl font-semibold text-foreground mt-4">
               {isAgentSpeaking ? "Listening to AI..." : "Speak now..."}
             </h2>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               {messages.length > 0 ? "Press pause to view conversation" : "Click Pause when you're done"}
             </p>
           </div>
         )}
         
         {isPaused && messages.length === 0 && !isLoading && !error && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center text-gray-400">
+          <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
             <div className="w-full h-[300px] max-w-md mx-auto mb-6">
               <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
                 <ambientLight intensity={0.6} />
                 <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
-                <pointLight position={[-5, -5, -5]} intensity={0.7} color="#E50041" />
+                <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
                 <FloatingLogo isSpeaking={false} />
                 <AudioVisualizer isSpeaking={false} />
               </Canvas>
             </div>
-            <h2 className="text-xl font-semibold text-gray-200 mt-4">Hello! How can I help you today?</h2>
-            <p className="text-sm text-gray-500">Click the Play button below to start speaking</p>
+            <h2 className="text-xl font-semibold text-foreground mt-4">Hello! How can I help you today?</h2>
+            <p className="text-sm text-muted-foreground">Click the Play button below to start speaking</p>
           </div>
         )}
         
@@ -560,8 +570,8 @@ export function ChatView({
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[70%] px-4 py-2.5 rounded-xl shadow ${ 
                     msg.role === "user" 
-                    ? "bg-gradient-to-r from-[#E50041] to-[#C00031] text-white rounded-br-none" 
-                    : "bg-[#252525] text-gray-200 rounded-bl-none" }`}
+                    ? "bg-primary text-primary-foreground rounded-br-none" 
+                    : "bg-muted text-muted-foreground rounded-bl-none" }`}
                 >
                     <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
                     <div className="text-xs opacity-60 mt-1.5 text-right">
@@ -575,24 +585,24 @@ export function ChatView({
         )}
       </div>
 
-      <div className="p-3 border-t border-[#2A2A2A] bg-[#1D1D1D]">
+      <div className="p-3 border-t border-border bg-card">
         {documentProcessingError && (
           <div className={`mb-2 p-2.5 rounded-md text-xs text-center ${
             documentProcessingError.startsWith('✅') 
-              ? 'bg-green-700 bg-opacity-30 text-green-300 border border-green-700' 
-              : 'bg-red-700 bg-opacity-30 text-red-300 border border-red-700'
+              ? 'bg-primary/10 text-primary border border-primary/20' 
+              : 'bg-destructive/10 text-destructive border border-destructive/20'
           }`}>
             {documentProcessingError}
           </div>
         )}
         {selectedFile && (
-          <div className="mb-2 p-3 bg-[#252525] rounded-md flex items-center justify-between text-sm">
+          <div className="mb-2 p-3 bg-muted rounded-md flex items-center justify-between text-sm">
             <div className="flex items-center overflow-hidden">
-              <FileText size={18} className="text-gray-400 mr-2 flex-shrink-0" />
-              <span className="text-gray-200 truncate" title={selectedFile.name}>
+              <FileText size={18} className="text-muted-foreground mr-2 flex-shrink-0" />
+              <span className="text-foreground truncate" title={selectedFile.name}>
                 {selectedFile.name}
               </span>
-              <span className="text-gray-500 ml-2 flex-shrink-0">
+              <span className="text-muted-foreground ml-2 flex-shrink-0">
                 ({(selectedFile.size / 1024).toFixed(1)} KB)
               </span>
             </div>
@@ -604,7 +614,7 @@ export function ChatView({
                   }
                 }}
                 disabled={isProcessingDocument}
-                className={`flex items-center bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-md text-xs transition-colors mr-2 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`flex items-center bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md text-xs transition-colors mr-2 disabled:opacity-60 disabled:cursor-not-allowed`}
                 title="Use this document for the conversation"
               >
                 {isProcessingDocument ? (
@@ -617,7 +627,7 @@ export function ChatView({
               <button
                 onClick={clearSelectedFile}
                 disabled={isProcessingDocument}
-                className="p-1.5 bg-red-600 hover:bg-red-500 text-white rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 title="Clear selected document"
               >
                 <X size={14} />

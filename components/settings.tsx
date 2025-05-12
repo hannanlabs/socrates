@@ -76,12 +76,12 @@ export function Settings() {
           variant="ghost" 
           size="icon" 
           onClick={() => router.push('/')} 
-          className="mr-4 hover:bg-[#222222] text-gray-300 hover:text-white"
+          className="mr-4 hover:bg-accent text-muted-foreground hover:text-accent-foreground"
           aria-label="Back to home"
         >
           <ArrowLeft size={40} />
         </Button>
-        <h1 className="text-3xl font-light text-gray-200">Settings</h1>
+        <h1 className="text-3xl font-light text-foreground">Settings</h1>
       </div>
 
       <div className="flex gap-12">
@@ -91,8 +91,8 @@ export function Settings() {
               variant="ghost"
               className={`w-full justify-start ${
                 activeTab === "account"
-                  ? "bg-[#111111] text-white"
-                  : "text-gray-300 hover:bg-[#222222] hover:text-white"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               }`}
               onClick={() => setActiveTab("account")}
             >
@@ -102,8 +102,8 @@ export function Settings() {
               variant="ghost"
               className={`w-full justify-start ${
                 activeTab === "billing"
-                  ? "bg-[#111111] text-white"
-                  : "text-gray-300 hover:bg-[#222222] hover:text-white"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               }`}
               onClick={() => setActiveTab("billing")}
             >
@@ -114,13 +114,13 @@ export function Settings() {
 
         <div className="flex-1">
           {activeTab === "account" && (
-            <div className="bg-[#222222] border border-gray-700 rounded-lg p-6">
-              <h2 className="text-xl font-medium text-gray-200 mb-6">Account Settings</h2>
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h2 className="text-xl font-medium text-foreground mb-6">Account Settings</h2>
 
               <div className="space-y-8">
                 <div>
-                  <h3 className="text-gray-200 font-medium mb-2">ElevenLabs Agent ID</h3>
-                  <p className="text-sm text-gray-400 mb-3">
+                  <h3 className="text-foreground font-medium mb-2">ElevenLabs Agent ID</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
                     Enter your custom ElevenLabs Agent ID to personalize your AI interactions.
                   </p>
                   <div className="flex items-center gap-3">
@@ -129,25 +129,25 @@ export function Settings() {
                       placeholder="Enter your Agent ID"
                       value={agentIdInput}
                       onChange={(e) => setAgentIdInput(e.target.value)}
-                      className="max-w-sm bg-[#111111] border-gray-600 text-white placeholder-gray-500"
+                      className="max-w-sm bg-input border-border text-foreground placeholder:text-muted-foreground"
                     />
                     <Button
                       onClick={handleSaveAgentId}
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       Save Agent ID
                     </Button>
                   </div>
                   {saveStatus && (
-                    <p className={`mt-2 text-sm ${saveStatus.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
+                    <p className={`mt-2 text-sm ${saveStatus.startsWith("Error") ? "text-destructive" : "text-primary"}`}>
                       {saveStatus}
                     </p>
                   )}
                 </div>
 
-                <div className="border-t border-gray-700 pt-6">
-                  <h3 className="text-gray-200 font-medium mb-2">ElevenLabs API Key</h3>
-                  <p className="text-sm text-gray-400 mb-3">
+                <div className="border-t border-border pt-6">
+                  <h3 className="text-foreground font-medium mb-2">ElevenLabs API Key</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
                     Enter your ElevenLabs API Key. This will be stored securely.
                   </p>
                   <div className="flex items-center gap-3">
@@ -156,17 +156,17 @@ export function Settings() {
                       placeholder="Enter your ElevenLabs API Key"
                       value={elevenLabsApiKeyInput}
                       onChange={(e) => setElevenLabsApiKeyInput(e.target.value)}
-                      className="max-w-sm bg-[#111111] border-gray-600 text-white placeholder-gray-500"
+                      className="max-w-sm bg-input border-border text-foreground placeholder:text-muted-foreground"
                     />
                     <Button
                       onClick={handleSaveApiKey}
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       Save API Key
                     </Button>
                   </div>
                   {saveApiKeyStatus && (
-                    <p className={`mt-2 text-sm ${saveApiKeyStatus.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
+                    <p className={`mt-2 text-sm ${saveApiKeyStatus.startsWith("Error") ? "text-destructive" : "text-primary"}`}>
                       {saveApiKeyStatus}
                     </p>
                   )}
@@ -176,9 +176,9 @@ export function Settings() {
           )}
 
           {activeTab === "billing" && (
-            <div className="bg-[#222222] border border-gray-700 rounded-lg p-4 max-w-md">
+            <div className="bg-card border border-border rounded-lg p-4 max-w-md">
               <div className="flex items-center gap-3">
-                <div className="text-white">
+                <div className="text-foreground">
                   <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M20 10C15 10 10 15 10 20C10 25 15 30 20 30C25 30 30 25 30 20C30 15 25 10 20 10ZM20 28C16.13 28 12 24.87 12 20C12 15.13 16.13 12 20 12C23.87 12 28 15.13 28 20C28 24.87 23.87 28 20 28Z"
@@ -187,7 +187,7 @@ export function Settings() {
                     <path d="M20 15V25M15 20H25" stroke="currentColor" strokeWidth="1.5" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-medium text-gray-200 my-auto">Free plan</h2>
+                <h2 className="text-lg font-medium text-foreground my-auto">Free plan</h2>
               </div>
             </div>
           )}

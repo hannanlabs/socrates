@@ -71,25 +71,25 @@ export function SignupForm() {
   return (
     <div className="flex w-full h-full min-h-screen">
       {/* Left side - Signup form / Success Message */}
-      <div className="w-full md:w-1/2 bg-black p-4 sm:p-8 flex flex-col justify-center overflow-y-auto">
+      <div className="w-full md:w-1/2 bg-white p-4 sm:p-8 flex flex-col justify-center overflow-y-auto">
         <div className="max-w-md mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-8">
+            <h1 className="text-3xl font-bold text-black mb-8">
               {signupComplete ? "Check Your Email" : "Sign Up"}
             </h1>
           </div>
 
           {signupComplete ? (
             <div className="text-center">
-              <p className="text-white mb-4">
+              <p className="text-black mb-4">
                 A confirmation email has been sent to <span className="font-semibold">{submittedEmail}</span>.
               </p>
-              <p className="text-white">
+              <p className="text-black">
                 Please click the link in the email to complete your registration.
               </p>
               <div className="mt-8 text-sm text-gray-400">
                 Already confirmed?{" "}
-                <a href="/login" className="text-white hover:underline">
+                <a href="/login" className="text-black hover:underline">
                   Sign in
                 </a>
               </div>
@@ -98,7 +98,7 @@ export function SignupForm() {
             <>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm text-white">
+                  <label htmlFor="name" className="text-sm text-black">
                     Name
                   </label>
                   <Input
@@ -113,7 +113,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm text-white">
+                  <label htmlFor="email" className="text-sm text-black">
                     Email
                   </label>
                   <Input
@@ -129,7 +129,7 @@ export function SignupForm() {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm text-white">
+                  <label htmlFor="password" className="text-sm text-black">
                     Password
                   </label>
                   <Input
@@ -145,7 +145,7 @@ export function SignupForm() {
                   />
                 </div>
 
-                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {error && <p className="text-blue-500 text-sm">{error}</p>}
 
                 <Button
                   type="submit"
@@ -158,7 +158,7 @@ export function SignupForm() {
 
               <div className="mt-8 text-sm text-gray-400">
                 Already have an account?{" "}
-                <a href="/login" className="text-white hover:underline">
+                <a href="/login" className="text-black hover:underline">
                   Sign in
                 </a>
               </div>
@@ -168,7 +168,7 @@ export function SignupForm() {
       </div>
 
       {/* Right side - Image */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-gray-900 to-black relative">
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-gray-900 to-white relative">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-50"
           style={{
