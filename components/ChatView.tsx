@@ -343,9 +343,9 @@ export function ChatView({
           </button>
           {showExportMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-[#2A2A2A] border border-[#333333] rounded-md shadow-xl z-20 py-1">
-              {[ { label: "Text File (.txt)", icon: FileText, action: exportToTxt },
+              {[{ label: "PDF (.pdf)", icon: FileIconType, action: exportToPdf },
                 { label: "Word (.docx)", icon: FileIconType, action: exportToDocx },
-                { label: "PDF (.pdf)", icon: FileIconType, action: exportToPdf },
+                { label: "Text File (.txt)", icon: FileText, action: exportToTxt },
               ].map(item => (
                 <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-gray-200 hover:bg-[#383838] transition-colors">
                   <item.icon className="mr-2.5 h-4 w-4 text-gray-400" /> {item.label}
