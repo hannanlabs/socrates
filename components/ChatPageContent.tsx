@@ -21,6 +21,11 @@ interface ActiveDocumentInfo {
   fileName: string;
 }
 
+// New type for storing document info per chat
+interface ChatDocumentsState {
+  [chatId: string]: ActiveDocumentInfo | undefined;
+}
+
 export default function ChatPageContent({ user }: ChatPageContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -39,9 +44,11 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   const [isProcessingDocument, setIsProcessingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
 
-  // New state for the active document to be viewed
-  const [activeDocumentInfo, setActiveDocumentInfo] = useState<ActiveDocumentInfo | null>(null);
-  // New state to control viewer visibility
+  // Store document info per chat ID
+  const [chatDocumentsInfo, setChatDocumentsInfo] = useState<ChatDocumentsState>({});
+  // The currently active document for the selected chat (derived from chatDocumentsInfo)
+  const [currentDocumentForChat, setCurrentDocumentForChat] = useState<ActiveDocumentInfo | null>(null);
+  // State to control viewer visibility (remains global for now)
   const [isViewerOpen, setIsViewerOpen] = useState<boolean>(false);
 
   // This effect syncs URL to state changes
@@ -73,17 +80,31 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
       getChatById(currentIdInUrl).then(chat => {
         if (chat) setCurrentChatTitle(chat.title);
       });
+      // Update currentDocumentForChat when chat changes
+      setCurrentDocumentForChat(chatDocumentsInfo[currentIdInUrl] || null);
+      // If no document was previously open for this chat, ensure viewer is closed
+      if (!chatDocumentsInfo[currentIdInUrl]) {
+        setIsViewerOpen(false);
+      }
     } else {
       setCurrentChatTitle(null);
+      setCurrentDocumentForChat(null); // No chat, no document
+      setIsViewerOpen(false); // Close viewer if no chat selected
     }
-  }, [searchParams, selectedChatId])
+  }, [searchParams, selectedChatId, chatDocumentsInfo]); // Add chatDocumentsInfo dependency
 
   const handleSelectChat = (chatId: string | null) => {
     setSelectedChatId(chatId)
     setSelectedFile(null);
     setDocumentError(null); // Clear document error when chat changes
-    setActiveDocumentInfo(null); // Clear active document when chat changes
-    setIsViewerOpen(false); // Close viewer when chat changes
+    // Set the current document for the newly selected chat
+    setCurrentDocumentForChat(chatId ? chatDocumentsInfo[chatId] || null : null);
+    // If the new chat doesn't have a document, or no chat is selected, close the viewer.
+    // Keep viewer open if switching to a chat that *does* have a document and viewer was already open.
+    if (!chatId || !chatDocumentsInfo[chatId]) {
+        setIsViewerOpen(false);
+    }
+
     // Fetch and set title when a chat is selected
     if (chatId) {
       getChatById(chatId).then(chat => {
@@ -99,7 +120,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     setCurrentChatTitle("New Conversation"); // Set a default title for new chat UX
     setSelectedFile(null);
     setDocumentError(null); // Clear document error for new chat
-    setActiveDocumentInfo(null); // Clear active document for new chat
+    setCurrentDocumentForChat(null); // No document for new chat
     setIsViewerOpen(false); // Close viewer for new chat
     if (searchParams.get("id")) {
       router.push('/', { scroll: false })
@@ -131,16 +152,16 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
 
   // Function to process the document and start/update the chat
   const handleStartConversationWithDocument = async () => {
-    if (!selectedFile) {
-      setDocumentError("No file selected. Please choose a document first.");
+    if (!selectedFile || !selectedChatId) { // Ensure selectedChatId exists
+      setDocumentError("No file selected or no active chat. Please select a file and ensure a chat is active.");
       return;
     }
     
     setIsProcessingDocument(true);
     setDocumentError(null);
-    setActiveDocumentInfo(null); // Clear previous document before processing a new one
-    setIsViewerOpen(false); // Ensure viewer is closed initially
-    console.log("Processing document for conversation:", selectedFile.name);
+    // Don't clear currentDocumentForChat here, let it be overwritten by new doc info
+    setIsViewerOpen(false); // Ensure viewer is closed initially before opening with new/updated doc
+    console.log("Processing document for conversation:", selectedFile.name, "for chat:", selectedChatId);
 
     // Get API key and Agent ID from user metadata
     const elevenLabsApiKey = user?.user_metadata?.elevenlabs_api_key;
@@ -188,15 +209,16 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
         console.error("Error showing toast:", toastError);
       }
       
-      // Set active document info for the viewer
       if (result.supabaseDocId && result.publicUrl) {
-        const newDocInfo = {
+        const newDocInfo: ActiveDocumentInfo = {
           supabaseDocId: result.supabaseDocId,
           publicUrl: result.publicUrl,
           pageCount: result.pageCount,
           fileName: selectedFile.name,
         };
-        setActiveDocumentInfo(newDocInfo);
+        // Store this document against the current chatId
+        setChatDocumentsInfo(prev => ({ ...prev, [selectedChatId]: newDocInfo }));
+        setCurrentDocumentForChat(newDocInfo); // Set as the current document for viewing
         setIsViewerOpen(true); // Open the viewer automatically
       } else {
          console.warn("Backend did not return supabaseDocId or publicUrl. Document viewer cannot be opened.");
@@ -208,7 +230,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     } catch (error: any) {
       console.error("Failed to process document:", error);
       setDocumentError(error.message || "An unexpected error occurred while sending the document.");
-      setActiveDocumentInfo(null); // Ensure no stale doc info on error
+      setCurrentDocumentForChat(chatDocumentsInfo[selectedChatId] || null); // Revert to previous doc for this chat on error, or null
       setIsViewerOpen(false);
     } finally {
       setIsProcessingDocument(false);
@@ -218,18 +240,14 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   const clearSelectedFileAndError = () => {
     setSelectedFile(null);
     setDocumentError(null);
-    // Closing the viewer might be desired when clearing selection, depending on UX
-    // setIsViewerOpen(false);
   }
 
-  // Function to handle closing the document viewer
   const handleCloseDocumentViewer = () => {
-    setIsViewerOpen(false); // Only hide, don't clear activeDocumentInfo
+    setIsViewerOpen(false);
   };
 
-  // Function to handle opening the document viewer
   const handleOpenDocumentViewer = () => {
-    if (activeDocumentInfo) { // Only open if there's a doc to view
+    if (currentDocumentForChat) { // Now checks currentDocumentForChat
       setIsViewerOpen(true);
     }
   };
@@ -277,10 +295,10 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
             clearSelectedFile={clearSelectedFileAndError}
             isProcessingDocument={isProcessingDocument}
             documentProcessingError={documentError}
-            activeDocumentInfo={activeDocumentInfo} // Pass new state
-            isViewerOpen={isViewerOpen} // Pass viewer state
-            onOpenViewer={handleOpenDocumentViewer} // Pass open handler
-            onCloseViewer={handleCloseDocumentViewer} // Pass close handler
+            activeDocumentInfo={currentDocumentForChat} // Pass currentDocumentForChat
+            isViewerOpen={isViewerOpen}
+            onOpenViewer={handleOpenDocumentViewer}
+            onCloseViewer={handleCloseDocumentViewer}
           />
         ) : (
           // Welcome screen when no chat is selected
