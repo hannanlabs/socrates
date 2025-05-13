@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { getChatMessages, getChatById, addMessageToChat } from "@/lib/supabase/chat-service";
 import { useAuth } from "@/lib/supabase/auth-context";
-import { Loader2, Download, FileText, File as FileIconType, ChevronDown, Send, AlertTriangle, Mic, Paperclip, X, CheckCircle } from "lucide-react";
+import { Loader2, Download, FileText, File as FileIconType, ChevronDown, Send, AlertTriangle, Mic, Paperclip, X, CheckCircle, XCircle } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { Packer, Paragraph, TextRun, Document, HeadingLevel } from "docx";
 import ElevenLabsAgent, { TranscriptEntry } from "@/components/ElevenLabsAgent";
@@ -14,6 +14,7 @@ import * as THREE from 'three';
 
 // Import the new DocumentViewer component
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { Button } from "@/components/ui/button";
 
 type Message = {
   id: string;
@@ -41,7 +42,10 @@ interface ChatViewProps {
   clearSelectedFile: () => void;
   isProcessingDocument?: boolean;
   documentProcessingError?: string | null;
-  activeDocumentInfo?: ActiveDocumentInfo | null; // Add new prop
+  activeDocumentInfo?: ActiveDocumentInfo | null;
+  isViewerOpen?: boolean;
+  onOpenViewer?: () => void;
+  onCloseViewer?: () => void;
 }
 
 const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
@@ -141,7 +145,10 @@ export function ChatView({
   clearSelectedFile, 
   isProcessingDocument,
   documentProcessingError,
-  activeDocumentInfo
+  activeDocumentInfo,
+  isViewerOpen,
+  onOpenViewer,
+  onCloseViewer
 }: ChatViewProps) {
   const { user: authUser } = useAuth();
   const user = propUser || authUser;
@@ -668,13 +675,27 @@ export function ChatView({
                 onPauseStateChange={handlePauseStateChange}
                 initiateDocumentUpload={initiateDocumentUpload}
                 isProcessingDocument={isProcessingDocument}
+                onOpenViewer={onOpenViewer}
+                isViewerOpen={isViewerOpen}
+                activeDocumentInfo={activeDocumentInfo}
             />
           </div>
         </div>
       </div>
 
-      {activeDocumentInfo && (
-        <div className="w-1/2 max-w-[700px] min-w-[400px] h-full border-l border-border flex flex-col flex-shrink-0">
+      {isViewerOpen && activeDocumentInfo && (
+        <div className="w-1/2 max-w-[700px] min-w-[400px] h-full border-l border-border flex flex-col flex-shrink-0 relative">
+          {onCloseViewer && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCloseViewer}
+              className="absolute top-1 right-1 z-20 bg-background/60 hover:bg-muted/80 rounded-full"
+              aria-label="Close Document Viewer"
+            >
+              <XCircle className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+            </Button>
+          )}
           <DocumentViewer 
             key={activeDocumentInfo.supabaseDocId}
             src={activeDocumentInfo.publicUrl}

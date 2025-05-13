@@ -2,12 +2,20 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useConversation, Role } from '@11labs/react';
-import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle, Paperclip } from 'lucide-react';
+import { Mic, Square, Volume2, VolumeX, RefreshCw, PauseCircle, PlayCircle, Paperclip, FileText } from 'lucide-react';
 
 export interface TranscriptEntry {
   speaker: 'user' | 'assistant';
   text: string;
   timestamp: Date;
+}
+
+// Type for document info passed down
+interface ActiveDocumentInfo {
+  supabaseDocId: string;
+  publicUrl: string;
+  pageCount: number | null;
+  fileName: string;
 }
 
 interface ElevenLabsAgentProps {
@@ -17,6 +25,10 @@ interface ElevenLabsAgentProps {
   onPauseStateChange?: (isPaused: boolean) => void;
   initiateDocumentUpload: () => void;
   isProcessingDocument?: boolean;
+  // Add new props for viewer control
+  onOpenViewer?: () => void;
+  isViewerOpen?: boolean;
+  activeDocumentInfo?: ActiveDocumentInfo | null;
 }
 
 interface SDKMessage {
@@ -33,7 +45,11 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
   onNewMessage,
   onPauseStateChange,
   initiateDocumentUpload,
-  isProcessingDocument
+  isProcessingDocument,
+  // Destructure new props
+  onOpenViewer,
+  isViewerOpen,
+  activeDocumentInfo
 }) => {
   const [isPaused, setIsPaused] = useState(true); 
   const [statusMessage, setStatusMessage] = useState<string | null>('Paused - Click Play to Start');
@@ -310,6 +326,17 @@ const ElevenLabsAgent: React.FC<ElevenLabsAgentProps> = ({
               title="Reconnect"
             >
               <RefreshCw size={16} className={isConnecting ? 'animate-spin' : ''} />
+            </button>
+          )}
+
+          {/* Button to Re-open Document Viewer */}
+          {activeDocumentInfo && !isViewerOpen && onOpenViewer && (
+            <button
+              className="w-8 h-8 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center text-white"
+              onClick={onOpenViewer}
+              title={`View Document: ${activeDocumentInfo.fileName}`}
+            >
+              <FileText size={16} />
             </button>
           )}
 
