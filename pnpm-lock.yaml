@@ -104,11 +104,8 @@ importers:
       '@supabase/auth-helpers-nextjs':
         specifier: ^0.10.0
         version: 0.10.0(@supabase/supabase-js@2.49.4)
-      '@supabase/ssr':
-        specifier: ^0.6.1
-        version: 0.6.1(@supabase/supabase-js@2.49.4)
       '@supabase/supabase-js':
-        specifier: latest
+        specifier: ^2.49.4
         version: 2.49.4
       '@vercel/analytics':
         specifier: ^1.5.0
@@ -134,9 +131,6 @@ importers:
       docx:
         specifier: ^9.5.0
         version: 9.5.0
-      elevenlabs:
-        specifier: ^1.58.0
-        version: 1.58.0
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.0.0)
@@ -149,9 +143,6 @@ importers:
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.0.0)
-      next:
-        specifier: 15.2.4
-        version: 15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       next-themes:
         specifier: ^0.4.4
         version: 0.4.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -192,8 +183,11 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
+      '@supabase/ssr':
+        specifier: ^0.6.1
+        version: 0.6.1(@supabase/supabase-js@2.49.4)
       '@types/node':
-        specifier: ^22
+        specifier: ^22.0.0
         version: 22.0.0
       '@types/react':
         specifier: ^19
@@ -204,6 +198,12 @@ importers:
       '@types/three':
         specifier: ^0.176.0
         version: 0.176.0
+      elevenlabs:
+        specifier: ^1.58.0
+        version: 1.58.0
+      next:
+        specifier: 15.2.4
+        version: 15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       postcss:
         specifier: ^8
         version: 8.0.0

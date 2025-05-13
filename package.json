@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "socrates",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -41,8 +41,7 @@
     "@react-three/drei": "^10.0.7",
     "@react-three/fiber": "^9.1.2",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "latest",
+    "@supabase/supabase-js": "^2.49.4",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "autoprefixer": "^10.4.20",
@@ -51,12 +50,10 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "docx": "^9.5.0",
-    "elevenlabs": "^1.58.0",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.454.0",
-    "next": "15.2.4",
     "next-themes": "^0.4.4",
     "react": "^19",
     "react-day-picker": "8.10.1",
@@ -72,10 +69,13 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@supabase/ssr": "^0.6.1",
+    "@types/node": "^22.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.176.0",
+    "elevenlabs": "^1.58.0",
+    "next": "15.2.4",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
