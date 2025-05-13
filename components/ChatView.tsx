@@ -12,6 +12,9 @@ import { User } from "@supabase/supabase-js";
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// Import the new DocumentViewer component
+import { DocumentViewer } from "@/components/DocumentViewer";
+
 type Message = {
   id: string;
   chat_id: string;
@@ -19,6 +22,14 @@ type Message = {
   content: string;
   created_at: string;
 };
+
+// Type for the new prop
+interface ActiveDocumentInfo {
+  supabaseDocId: string;
+  publicUrl: string;
+  pageCount: number | null;
+  fileName: string;
+}
 
 interface ChatViewProps {
   chatId: string;
@@ -30,6 +41,7 @@ interface ChatViewProps {
   clearSelectedFile: () => void;
   isProcessingDocument?: boolean;
   documentProcessingError?: string | null;
+  activeDocumentInfo?: ActiveDocumentInfo | null; // Add new prop
 }
 
 const AudioVisualizer = ({ isSpeaking }: { isSpeaking: boolean }) => {
@@ -128,7 +140,8 @@ export function ChatView({
   selectedFile,
   clearSelectedFile, 
   isProcessingDocument,
-  documentProcessingError
+  documentProcessingError,
+  activeDocumentInfo
 }: ChatViewProps) {
   const { user: authUser } = useAuth();
   const user = propUser || authUser;
@@ -143,6 +156,9 @@ export function ChatView({
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(true);
   const agentInstanceIdBase = `agent-for-chat-${chatId}`;
+
+  // State for document viewer page
+  const [currentDocumentPage, setCurrentDocumentPage] = useState<number>(1);
 
   // Define primary color for 3D elements here
   const primaryColor = "#3B82F6"; // Example: Tailwind's blue-500 approx
@@ -480,6 +496,13 @@ export function ChatView({
     setIsPaused(paused);
   }, []);
 
+  // Callback for when the viewer page changes
+  const handleDocumentPageChange = (newPage: number) => {
+    console.log(`Document page changed to: ${newPage}`);
+    setCurrentDocumentPage(newPage);
+    // We'll use this state in Stage 2 to inform the agent
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col justify-center items-center p-4 bg-background">
@@ -500,153 +523,167 @@ export function ChatView({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-        <h1 className="text-lg font-semibold text-foreground truncate">{chatTitle}</h1>
-        <div className="relative" ref={exportMenuRef}>
-          <button 
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            className="flex items-center bg-muted hover:bg-accent text-accent-foreground px-3 py-1.5 rounded-md text-sm transition-colors"
-          >
-            <Download className="mr-1.5 h-4 w-4" />
-            Export
-            <ChevronDown className={`ml-1.5 h-4 w-4 transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
-          </button>
-          {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-48 bg-popover border border-border rounded-md shadow-xl z-20 py-1">
-              {[{ label: "PDF (.pdf)", action: exportToPdf}
-              ].map(item => (
-                <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
-                  {item.label}
-                </button>
+    <div className="flex-1 flex flex-row bg-background h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card flex-shrink-0">
+          <h1 className="text-lg font-semibold text-foreground truncate">{chatTitle}</h1>
+          <div className="relative" ref={exportMenuRef}>
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center bg-muted hover:bg-accent text-accent-foreground px-3 py-1.5 rounded-md text-sm transition-colors"
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              Export
+              <ChevronDown className={`ml-1.5 h-4 w-4 transition-transform duration-200 ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-popover border border-border rounded-md shadow-xl z-20 py-1">
+                {[{ label: "PDF (.pdf)", action: exportToPdf}
+                ].map(item => (
+                  <button key={item.label} onClick={item.action} className="w-full flex items-center px-3.5 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 relative">
+          {!isPaused && (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+              <div className="w-full h-[300px] max-w-md mx-auto mb-6">
+                <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
+                  <ambientLight intensity={0.6} />
+                  <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
+                  <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
+                  <FloatingLogo isSpeaking={isAgentSpeaking} />
+                  <AudioVisualizer isSpeaking={isAgentSpeaking} />
+                </Canvas>
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mt-4">
+                {isAgentSpeaking ? "Listening to AI..." : "Speak now..."}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                {messages.length > 0 ? "Press pause to view conversation" : "Click Pause when you're done"}
+              </p>
+            </div>
+          )}
+          
+          {isPaused && messages.length === 0 && !isLoading && !error && (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
+              <div className="w-full h-[300px] max-w-md mx-auto mb-6">
+                <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
+                  <ambientLight intensity={0.6} />
+                  <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
+                  <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
+                  <FloatingLogo isSpeaking={false} />
+                  <AudioVisualizer isSpeaking={false} />
+                </Canvas>
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mt-4">Hello! How can I help you today?</h2>
+              <p className="text-sm text-muted-foreground">Click the Play button below to start speaking</p>
+            </div>
+          )}
+          
+          {isPaused && messages.length > 0 && (
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id} 
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[70%] px-4 py-2.5 rounded-xl shadow ${ 
+                      msg.role === "user" 
+                      ? "bg-primary text-primary-foreground rounded-br-none" 
+                      : "bg-muted text-muted-foreground rounded-bl-none" }`}
+                  >
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
+                      <div className="text-xs opacity-60 mt-1.5 text-right">
+                          {formatTimestamp(msg.created_at)}
+                      </div>
+                  </div>
+                </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 relative">
-        {!isPaused && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-            <div className="w-full h-[300px] max-w-md mx-auto mb-6">
-              <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
-                <ambientLight intensity={0.6} />
-                <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
-                <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
-                <FloatingLogo isSpeaking={isAgentSpeaking} />
-                <AudioVisualizer isSpeaking={isAgentSpeaking} />
-              </Canvas>
+        <div className="p-3 border-t border-border bg-card flex-shrink-0">
+          {documentProcessingError && (
+            <div className={`mb-2 p-2.5 rounded-md text-xs text-center ${
+              documentProcessingError.startsWith('✅') 
+                ? 'bg-primary/10 text-primary border border-primary/20' 
+                : 'bg-destructive/10 text-destructive border border-destructive/20'
+            }`}>
+              {documentProcessingError}
             </div>
-            <h2 className="text-xl font-semibold text-foreground mt-4">
-              {isAgentSpeaking ? "Listening to AI..." : "Speak now..."}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              {messages.length > 0 ? "Press pause to view conversation" : "Click Pause when you're done"}
-            </p>
-          </div>
-        )}
-        
-        {isPaused && messages.length === 0 && !isLoading && !error && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-            <div className="w-full h-[300px] max-w-md mx-auto mb-6">
-              <Canvas camera={{ position: [0, 0.5, 3.5], fov: 50 }}>
-                <ambientLight intensity={0.6} />
-                <spotLight position={[5, 5, 5]} intensity={1.2} angle={0.3} penumbra={0.5} castShadow />
-                <pointLight position={[-5, -5, -5]} intensity={0.7} color={primaryColor} />
-                <FloatingLogo isSpeaking={false} />
-                <AudioVisualizer isSpeaking={false} />
-              </Canvas>
-            </div>
-            <h2 className="text-xl font-semibold text-foreground mt-4">Hello! How can I help you today?</h2>
-            <p className="text-sm text-muted-foreground">Click the Play button below to start speaking</p>
-          </div>
-        )}
-        
-        {isPaused && messages.length > 0 && (
-          <div className="space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id} 
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[70%] px-4 py-2.5 rounded-xl shadow ${ 
-                    msg.role === "user" 
-                    ? "bg-primary text-primary-foreground rounded-br-none" 
-                    : "bg-muted text-muted-foreground rounded-bl-none" }`}
-                >
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
-                    <div className="text-xs opacity-60 mt-1.5 text-right">
-                        {formatTimestamp(msg.created_at)}
-                    </div>
-                </div>
+          )}
+          {selectedFile && !activeDocumentInfo && (
+            <div className="mb-2 p-3 bg-muted rounded-md flex items-center justify-between text-sm">
+              <div className="flex items-center overflow-hidden">
+                <FileText size={18} className="text-muted-foreground mr-2 flex-shrink-0" />
+                <span className="text-foreground truncate" title={selectedFile.name}>
+                  {selectedFile.name}
+                </span>
+                <span className="text-muted-foreground ml-2 flex-shrink-0">
+                  ({(selectedFile.size / 1024).toFixed(1)} KB)
+                </span>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </div>
-
-      <div className="p-3 border-t border-border bg-card">
-        {documentProcessingError && (
-          <div className={`mb-2 p-2.5 rounded-md text-xs text-center ${
-            documentProcessingError.startsWith('✅') 
-              ? 'bg-primary/10 text-primary border border-primary/20' 
-              : 'bg-destructive/10 text-destructive border border-destructive/20'
-          }`}>
-            {documentProcessingError}
-          </div>
-        )}
-        {selectedFile && (
-          <div className="mb-2 p-3 bg-muted rounded-md flex items-center justify-between text-sm">
-            <div className="flex items-center overflow-hidden">
-              <FileText size={18} className="text-muted-foreground mr-2 flex-shrink-0" />
-              <span className="text-foreground truncate" title={selectedFile.name}>
-                {selectedFile.name}
-              </span>
-              <span className="text-muted-foreground ml-2 flex-shrink-0">
-                ({(selectedFile.size / 1024).toFixed(1)} KB)
-              </span>
+              <div className="flex items-center flex-shrink-0">
+                <button
+                  onClick={async () => {
+                    if (!isProcessingDocument) {
+                      await onDocumentReadyToProcess();
+                    }
+                  }}
+                  disabled={isProcessingDocument}
+                  className={`flex items-center bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md text-xs transition-colors mr-2 disabled:opacity-60 disabled:cursor-not-allowed`}
+                  title="Use this document for the conversation"
+                >
+                  {isProcessingDocument ? (
+                    <Loader2 size={14} className="mr-1.5 animate-spin" />
+                  ) : (
+                    <CheckCircle size={14} className="mr-1" />
+                  )}
+                  {isProcessingDocument ? "Processing..." : "Use Document"}
+                </button>
+                <button
+                  onClick={clearSelectedFile}
+                  disabled={isProcessingDocument}
+                  className="p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  title="Clear selected document"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center flex-shrink-0">
-              <button
-                onClick={async () => {
-                  if (!isProcessingDocument) {
-                    await onDocumentReadyToProcess();
-                  }
-                }}
-                disabled={isProcessingDocument}
-                className={`flex items-center bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 rounded-md text-xs transition-colors mr-2 disabled:opacity-60 disabled:cursor-not-allowed`}
-                title="Use this document for the conversation"
-              >
-                {isProcessingDocument ? (
-                  <Loader2 size={14} className="mr-1.5 animate-spin" />
-                ) : (
-                  <CheckCircle size={14} className="mr-1" />
-                )}
-                {isProcessingDocument ? "Processing..." : "Use Document"}
-              </button>
-              <button
-                onClick={clearSelectedFile}
-                disabled={isProcessingDocument}
-                className="p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                title="Clear selected document"
-              >
-                <X size={14} />
-              </button>
-            </div>
+          )}
+          <div className="flex items-end justify-start">
+            <ElevenLabsAgent 
+                key={agentKey}
+                agentId={agentIdToUse}
+                onNewMessage={handleNewMessageFromAgent}
+                onSpeakingStatusChange={setIsAgentSpeaking}
+                onPauseStateChange={handlePauseStateChange}
+                initiateDocumentUpload={initiateDocumentUpload}
+                isProcessingDocument={isProcessingDocument}
+            />
           </div>
-        )}
-        <div className="flex items-end justify-start">
-          <ElevenLabsAgent 
-              key={agentKey}
-              agentId={agentIdToUse}
-              onNewMessage={handleNewMessageFromAgent}
-              onSpeakingStatusChange={setIsAgentSpeaking}
-              onPauseStateChange={handlePauseStateChange}
-              initiateDocumentUpload={initiateDocumentUpload}
-              isProcessingDocument={isProcessingDocument}
-          />
         </div>
       </div>
+
+      {activeDocumentInfo && (
+        <div className="w-1/2 max-w-[700px] min-w-[400px] h-full border-l border-border flex flex-col flex-shrink-0">
+          <DocumentViewer 
+            key={activeDocumentInfo.supabaseDocId}
+            src={activeDocumentInfo.publicUrl}
+            pageCount={activeDocumentInfo.pageCount}
+            initialPage={currentDocumentPage}
+            onPageChange={handleDocumentPageChange}
+          />
+        </div>
+      )}
     </div>
   );
 } 

@@ -13,6 +13,14 @@ interface ChatPageContentProps {
   user: User
 }
 
+// Add a type for the document information
+interface ActiveDocumentInfo {
+  supabaseDocId: string;
+  publicUrl: string;
+  pageCount: number | null;
+  fileName: string;
+}
+
 export default function ChatPageContent({ user }: ChatPageContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -30,6 +38,9 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   // New state for document processing
   const [isProcessingDocument, setIsProcessingDocument] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+
+  // New state for the active document to be viewed
+  const [activeDocumentInfo, setActiveDocumentInfo] = useState<ActiveDocumentInfo | null>(null);
 
   // This effect syncs URL to state changes
   useEffect(() => {
@@ -69,6 +80,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     setSelectedChatId(chatId)
     setSelectedFile(null);
     setDocumentError(null); // Clear document error when chat changes
+    setActiveDocumentInfo(null); // Clear active document when chat changes
     // Fetch and set title when a chat is selected
     if (chatId) {
       getChatById(chatId).then(chat => {
@@ -84,6 +96,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     setCurrentChatTitle("New Conversation"); // Set a default title for new chat UX
     setSelectedFile(null);
     setDocumentError(null); // Clear document error for new chat
+    setActiveDocumentInfo(null); // Clear active document for new chat
     if (searchParams.get("id")) {
       router.push('/', { scroll: false })
     }
@@ -121,6 +134,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     
     setIsProcessingDocument(true);
     setDocumentError(null);
+    setActiveDocumentInfo(null); // Clear previous document before processing a new one
     console.log("Processing document for conversation:", selectedFile.name);
 
     // Get API key and Agent ID from user metadata
@@ -137,6 +151,10 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
     formData.append('file', selectedFile);
     formData.append('apiKey', elevenLabsApiKey);
     formData.append('agentId', elevenLabsAgentId);
+    // Pass chatId if available, so the document can be associated
+    if (selectedChatId) {
+      formData.append('chatId', selectedChatId);
+    }
 
     try {
       const response = await fetch('/api/agent/set-document', {
@@ -157,7 +175,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
       try {
         toast({
           title: "Document Processed Successfully",
-          description: `"${selectedFile.name}" has been added to the agent's knowledge base.`,
+          description: `"${selectedFile.name}" has been added to the agent's knowledge base. Document viewer will open.`,
           variant: "default",
           duration: 5000, // Show for 5 seconds
         });
@@ -165,21 +183,37 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
         console.error("Error showing toast:", toastError);
       }
       
-      setDocumentError(`✅ Document "${selectedFile.name}" processed successfully!`);
+      // Set active document info for the viewer
+      if (result.supabaseDocId && result.publicUrl) {
+        setActiveDocumentInfo({
+          supabaseDocId: result.supabaseDocId,
+          publicUrl: result.publicUrl,
+          pageCount: result.pageCount, // This will be null as per current API
+          fileName: selectedFile.name, // Store the file name
+        });
+      } else {
+         console.warn("Backend did not return supabaseDocId or publicUrl. Document viewer cannot be opened.");
+         setDocumentError("Document processed, but viewer data is missing.");
+      }
       
-      setTimeout(() => {
-        setDocumentError(null);
-      }, 2000);
+      // Clear the selected file as it's now "active" or processed
+      setSelectedFile(null); 
+
+      // No longer setting documentError for success here as toast and viewer are primary feedback
+      // setTimeout(() => {
+      //   setDocumentError(null);
+      // }, 2000);
       
       if (!selectedChatId) {
          console.log("Document processed. Agent KB updated. Consider starting a new chat or refreshing context.")
       }
 
-      setSelectedFile(null); // Clear the file after successful processing
+      // setSelectedFile(null); // Clear the file after successful processing -- MOVED UP
 
     } catch (error: any) {
       console.error("Failed to process document:", error);
       setDocumentError(error.message || "An unexpected error occurred while sending the document.");
+      setActiveDocumentInfo(null); // Ensure no stale doc info on error
     } finally {
       setIsProcessingDocument(false);
     }
@@ -188,6 +222,8 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
   const clearSelectedFileAndError = () => {
     setSelectedFile(null);
     setDocumentError(null);
+    // Optionally, you might want to clear activeDocumentInfo here too if the UX implies it
+    // setActiveDocumentInfo(null); 
   }
 
   // New callback handler for title updates from sidebar
@@ -233,6 +269,7 @@ export default function ChatPageContent({ user }: ChatPageContentProps) {
             clearSelectedFile={clearSelectedFileAndError}
             isProcessingDocument={isProcessingDocument}
             documentProcessingError={documentError}
+            activeDocumentInfo={activeDocumentInfo} // Pass new state
           />
         ) : (
           // Welcome screen when no chat is selected
