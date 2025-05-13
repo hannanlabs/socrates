@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ElevenLabsClient } from 'elevenlabs';
-import { createServerClient } from '@supabase/ssr'; // Import Supabase client
-import { cookies } from 'next/headers'; // Needed for server-side Supabase client
+import { createServerClient, type CookieOptions, type GetCookiess } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 // Import Blob if not globally available (usually is in Node.js recent versions via undici)
 // If you get an error for Blob, you might need to explicitly import it or ensure your Node version is >= 18
@@ -12,30 +12,41 @@ export async function POST(req: NextRequest) {
   let newUploadedDocumentName: string | undefined = undefined;
   let elevenlabs: ElevenLabsClient | undefined = undefined;
   let supabaseStoragePath: string | undefined = undefined; // Track storage path for potential cleanup
-  const cookieStore = cookies(); // Get cookie store for Supabase client
+  const cookieStore = await cookies();
 
-  // Initialize Supabase client
-  // Ensure these environment variables are set in your .env.local
+  // Collect cookies Supabase wants to set/remove so we can add them to the response later.
+  const responseCookies: { name: string; value: string; options: CookieOptions }[] = [];
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll().map((c) => ({ name: c.name, value: c.value }));
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            responseCookies.push({ name, value, options });
+          });
+        },
+        removeAll(cookiesToRemove) {
+          cookiesToRemove.forEach(({ name, options }) => {
+            responseCookies.push({ name, value: '', options });
+          });
         },
       },
     }
   );
 
-  // Get user session for user_id
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  // Always authenticate using getUser() – ensures token is valid
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  if (sessionError || !session?.user) {
-    console.error('Authentication error:', sessionError);
+  if (authError || !user) {
+    console.error('Authentication error:', authError);
     return NextResponse.json({ error: 'User not authenticated.' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = user.id;
 
   try {
     // Get form data
@@ -178,14 +189,20 @@ export async function POST(req: NextRequest) {
     console.log('Document metadata inserted successfully. Supabase Document ID:', supabaseDocId);
     // --- End Supabase Database Insert ---
 
-    // Return updated response shape
-    return NextResponse.json({
+    // Build success response & attach any cookies Supabase asked us to set
+    const successRes = NextResponse.json({
       message: 'Document processed, uploaded to storage, agent knowledge base updated, and metadata saved.',
       elevenLabsDocId: newUploadedDocumentId, // Renamed for clarity
       supabaseDocId: supabaseDocId,
       publicUrl: publicUrl,
       pageCount: null // Placeholder for now
     }, { status: 200 });
+
+    responseCookies.forEach(({ name, value, options }) => {
+      successRes.cookies.set({ name, value, ...options });
+    });
+
+    return successRes;
 
   } catch (error: any) {
     console.error('Error during document processing:', error);
@@ -224,6 +241,12 @@ export async function POST(req: NextRequest) {
     } else if (error.message) {
         errorMessage = error.message;
     }
-    return NextResponse.json({ error: errorMessage }, { status: errorStatus });
+    const errorRes = NextResponse.json({ error: errorMessage }, { status: errorStatus });
+
+    responseCookies.forEach(({ name, value, options }) => {
+      errorRes.cookies.set({ name, value, ...options });
+    });
+
+    return errorRes;
   }
 } 
